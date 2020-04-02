@@ -69,7 +69,7 @@ require plugin_dir_path( __FILE__ ) . 'includes/class-fincon-woocommerce.php';
 add_action( 'plugins_loaded', 'fincon_woocommerce_check_for_update' );
 function fincon_woocommerce_check_for_update(){
 
-	require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-fincon-woocommerce-updater.php';
+	require_once plugin_dir_path( __FILE__ ) . 'includes/class-fincon-woocommerce-updater.php';
 
 
 	  $config = array(
