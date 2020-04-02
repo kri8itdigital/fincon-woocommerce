@@ -139,11 +139,6 @@ class Fincon_Woocommerce {
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-fincon-woocommerce-handler.php';
 
 		/**
-		 * GitHub Updater Class
-		 */
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-fincon-woocommerce-updater.php';
-
-		/**
 		 * The class responsible for orchestrating the actions and filters of the
 		 * core plugin.
 		 */
@@ -199,8 +194,6 @@ class Fincon_Woocommerce {
 		
 
 		$plugin_admin = new Fincon_Woocommerce_Admin( $this->get_plugin_name(), $this->get_version() );
-
-		$this->loader->add_action( 'plugins_loaded', $plugin_admin, 'check_for_update' );
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );

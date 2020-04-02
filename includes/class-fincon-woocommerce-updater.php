@@ -404,6 +404,8 @@ class fincon_updater
             return $transient;
         }
 
+
+
         // check the version and decide if it's new
         $update = version_compare( $this->config['new_version'], $this->config['version'] );
 

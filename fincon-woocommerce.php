@@ -16,7 +16,7 @@
  * Plugin Name:       Fincon For Woocommerce
  * Plugin URI:        https://www.kri8it.com
  * Description:       Connects your Fincon accounting system WebAPI to Woocommerce.
- * Version:           1.0.1
+ * Version:           1.0.2
  * Author:            Hilton Moore
  * Author URI:        https://www.kri8it.com
  * License:           GPL-2.0+
@@ -35,7 +35,7 @@ if ( ! defined( 'WPINC' ) ) {
  * Start at version 1.0.0 and use SemVer - https://semver.org
  * Rename this for your plugin and update it as you release new versions.
  */
-define( 'FINCON_WOOCOMMERCE_VERSION', '1.0.1' );
+define( 'FINCON_WOOCOMMERCE_VERSION', '1.0.2' );
 
 /**
  * The code that runs during plugin activation.
@@ -63,6 +63,36 @@ register_deactivation_hook( __FILE__, 'deactivate_fincon_woocommerce' );
  * admin-specific hooks, and public-facing site hooks.
  */
 require plugin_dir_path( __FILE__ ) . 'includes/class-fincon-woocommerce.php';
+
+
+
+add_action( 'plugins_loaded', 'fincon_woocommerce_check_for_update' );
+function fincon_woocommerce_check_for_update(){
+
+	require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-fincon-woocommerce-updater.php';
+
+
+	  $config = array(
+	        'slug'               => plugin_basename( __FILE__ ),
+	        'proper_folder_name' => 'fincon-woocommerce',
+	        'api_url'            => 'https://api.github.com/kri8itdigital/fincon-woocommerce',
+	        'raw_url'            => 'https://raw.github.com/kri8itdigital/fincon-woocommerce/master',
+	        'github_url'         => 'https://github.com/kri8itdigital/fincon-woocommerce',
+	        'zip_url'            => 'https://github.com/kri8itdigital/fincon-woocommerce/archive/master.zip',
+	        'homepage'           => 'https://github.com/kri8itdigital/fincon-woocommerce',
+	        'sslverify'          => true,
+	        'requires'           => '4.0',
+	        'tested'             => '5.4',
+	        'readme'             => 'README.md'
+	    );
+
+	    new fincon_updater( $config );
+
+}
+
+		
+
+
 
 /**
  * Begins execution of the plugin.
