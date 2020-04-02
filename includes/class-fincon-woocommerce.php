@@ -70,7 +70,7 @@ class Fincon_Woocommerce {
 		if ( defined( 'FINCON_WOOCOMMERCE_VERSION' ) ) {
 			$this->version = FINCON_WOOCOMMERCE_VERSION;
 		} else {
-			$this->version = '1.0.1';
+			$this->version = '1.1.0';
 		}
 		$this->plugin_name = 'fincon-woocommerce';
 
@@ -106,31 +106,6 @@ class Fincon_Woocommerce {
 		foreach (glob(plugin_dir_path( dirname( __FILE__ ) ) . 'fincon/*.php') as $filename):
 			include $filename;
 		endforeach;
-
-
-
-
-		/**
-		 * FINCON CLASSES
-		 */
-		
-		/*
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'fincon/fincon-woocommerce-debtor-class.php';
-
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'fincon/fincon-woocommerce-accountlist-class.php';
-
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'fincon/fincon-woocommerce-salesorder-class.php';
-
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'fincon/fincon-woocommerce-salesorderdetail-class.php';
-
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'fincon/fincon-woocommerce-stock-class.php';
-
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'fincon/fincon-woocommerce-stocklist-class.php';
-
-		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'fincon/fincon-woocommerce-class.php';
-		
-		*/
-	
 
 
 		/**
@@ -259,7 +234,7 @@ class Fincon_Woocommerce {
 		endif;
 
 		if(get_option('fincon_woocommerce_create_users') == 'yes'):
-			$this->loader->add_action('user_register', $plugin_public, 'user_register', 999, 1);
+			//$this->loader->add_action('user_register', $plugin_public, 'user_register', 999, 1);
 		endif;
 
 	}

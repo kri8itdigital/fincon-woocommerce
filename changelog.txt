@@ -1,0 +1,20 @@
+= 1.1.0 - April 2, 2020 =
+* Initial Production Release
+* Feature: Sync products from Fincon to Woocommerce
+* Feature: Update stock levels and pricing automatically from Fincon
+* Feature: Adding a product to your cart on Woocommerce performs a live stock check to your Fincon
+* Feature: Sync your Debtors from Fincon to Woocommerce
+* Feature: Assign Guest orders to Specific Fincon Debtor Account
+* Feature: Create Woocommerce orders as Sales Orders in Fincon
+
+= 1.0.3 - April 2, 2020 =
+* Developmental Pre-Release
+
+= 1.0.2 - April 2, 2020 =
+* Developmental Pre-Release
+
+= 1.0.1 - April 2, 2020 =
+* Developmental Pre-Release
+
+= 1.0.0 - April 2, 2020 =
+* Developmental Pre-Release

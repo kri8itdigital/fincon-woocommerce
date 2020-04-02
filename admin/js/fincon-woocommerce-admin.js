@@ -7,7 +7,7 @@
 
 		$('.fincon_woocommerce_ajax_create_sales_order').on('click', function(){
 
-				$_THIS_BUTTON = $(this);
+				var $_THIS_BUTTON = $(this);
 
 				$('#the-overlay').addClass('show');
 
@@ -17,7 +17,7 @@
 			    };
 
 				$.ajax({
-			        url: k8_params.ajax_url,
+			        url: fincon_params.ajax_url,
 			        type:'POST',
 			        data:ajax_data,
 			        async: true,
@@ -37,7 +37,7 @@
 
 							if(confirm('Sales Order ' + data.so + ' successfully created')){
 
-								$_THIS_BUTTON.prev().html(data.so);
+								$_THIS_BUTTON.prev().html(data.text);
 								$_THIS_BUTTON.remove();
 								$('#the-overlay').removeClass('show');
 

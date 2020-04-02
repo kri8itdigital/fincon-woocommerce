@@ -232,14 +232,14 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 						'default'       => 'no',
 						'checkboxgroup' => 'start',
 						'type'          => 'checkbox'
-					),
+					),/*
 					array(
 						'desc'          => __( 'Create Users in Fincon', 'fincon-woocommerce' ),
 						'id'            => 'fincon_woocommerce_create_users',
 						'default'       => 'no',
 						'checkboxgroup' => '',
 						'type'          => 'checkbox'
-					),
+					),*/
 					array(
 						'desc'          => __( 'Assign All Orders To Main Debtor Account', 'fincon-woocommerce' ),
 						'id'            => 'fincon_woocommerce_one_debtor_account',
@@ -249,7 +249,7 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 					),
 					array(
 						'title'         => __( 'Fincon Debtor Account', 'fincon-woocommerce' ),
-						'desc'          => __( 'The Account used for logging orders', 'fincon-woocommerce' ),
+						'desc'          => __( 'The Account used for logging orders. Will be used for all orders or just for Guest orders', 'fincon-woocommerce' ),
 						'id'            => 'fincon_woocommerce_account',
 						'default'       => '',
 						'type'          => 'text'

@@ -746,6 +746,7 @@ class fincon{
 
 		if(!$_DEP):
 			$_DEP = $this->GetDebAccount($this->_ACC);
+			$_ACC_TO_USE = $this->_ACC;
 		endif;
 
 
@@ -838,10 +839,13 @@ class fincon{
 
 		if(count($_SALES_ORDER_DETAILS) > 0):
 
-			$_SHIPPING_LINE = $this->GetShipping($_ORDER);
+			if($_ORDER->get_shipping_method()):
+				$_SHIPPING_LINE = $this->GetShipping($_ORDER);
 
-			if($_SHIPPING_LINE && $_SHIPPING_LINE->ItemNo):
-				$_SALES_ORDER_DETAILS[] = $_SHIPPING_LINE;
+				if($_SHIPPING_LINE && $_SHIPPING_LINE->ItemNo):
+					$_SALES_ORDER_DETAILS[] = $_SHIPPING_LINE;
+				endif;
+
 			endif;
 
 			$_COUPONS = $_ORDER->get_items( array( 'coupon' ) );

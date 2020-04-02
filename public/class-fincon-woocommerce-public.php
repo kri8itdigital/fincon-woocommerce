@@ -102,11 +102,32 @@ class Fincon_Woocommerce_Public {
 			else:
 				$_VALID = false;
 				wc_add_notice('Our apologies - we do not have enough of '.$_NAME.' in stock ('.$_STOCKQTY.')', 'error');
+
+				$_PROD->set_stock_quantity($_STOCKQTY);
+
+				if ($_STOCKQTY > 0):
+					$_PROD->set_stock_status('instock');
+				else:
+					$_PROD->set_stock_status('outofstock');
+				endif;
+
+				$_PROD->save();
+
 			endif;
 
 		else:
 			wc_add_notice('Our apologies - we do not have enough of '.$_NAME.' in stock ('.$_STOCKQTY.')', 'error');
 			$_VALID = false;
+
+			$_PROD->set_stock_quantity($_STOCKQTY);
+
+			if ($_STOCKQTY > 0):
+				$_PROD->set_stock_status('instock');
+			else:
+				$_PROD->set_stock_status('outofstock');
+			endif;
+
+			$_PROD->save();
 			
 		endif;
 

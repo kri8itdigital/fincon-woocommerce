@@ -74,6 +74,12 @@ class Fincon_Woocommerce_Admin {
 
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/fincon-woocommerce-admin.js', array( 'jquery' ), $this->version, false );
 
+		$params = array(
+			'ajax_url' => get_bloginfo('url').'/wp-admin/admin-ajax.php'
+		);
+
+		wp_localize_script( $this->plugin_name, 'fincon_params', $params );  
+
 	}
 
 
@@ -210,8 +216,13 @@ class Fincon_Woocommerce_Admin {
 				echo '</div>';
 				echo '<a class="fincon_woocommerce_ajax_create_sales_order button wc-action-button" data-o="'.$post->ID.'">Send</a>';
 			else:
-				echo '<div class="k8_sync_column_content"></div>';
-				echo '<a class="fincon_woocommerce_ajax_create_sales_order button wc-action-button" data-o="'.$post->ID.'">Send</a>';
+
+				if($post->post_status == 'wc-processing' || $post->post_status == 'wc-completed'):
+
+					echo '<div class="k8_sync_column_content"></div>';
+					echo '<a class="fincon_woocommerce_ajax_create_sales_order button wc-action-button" data-o="'.$post->ID.'">Send</a>';
+					
+				endif;
 			endif;
 		endif;
 	
