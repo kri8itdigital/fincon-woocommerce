@@ -1,0 +1,47 @@
+/**
+ * All of the CSS for your admin-specific functionality should be
+ * included in this file.
+ */
+
+#the-overlay{
+	position:fixed;
+	top:0;
+	left:0;
+	background-color:rgba(0,0,0,0.5);
+	z-index:999999;
+	width:100vw;
+	height:100vh;
+	transition:.3s all;
+	visibility:hidden;
+	opacity:0;
+	pointer-events: none;
+}
+
+#the-overlay.show{
+	visibility:visible;
+	opacity:1;
+}
+
+#the-overlay img{
+	position:absolute;
+	top:50%;
+	left:50%;
+	transform:translate(-50%, -50%);
+}
+
+.error_title{ color:red; font-weight:bold; 
+	font-size:12px;
+	line-height:14px;}
+
+.fincon-woocommerce-column-content ul, .fincon-woocommerce-column-content ol{
+ padding:0;
+ margin:0;
+}
+
+.kfincon-woocommerce-column-content li{
+	list-style:inside;
+	font-size:12px;
+	line-height:14px;
+}
+
+.fincon_sales_order{ font-weight:bold; }
