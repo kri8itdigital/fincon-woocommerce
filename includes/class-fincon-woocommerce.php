@@ -70,7 +70,7 @@ class Fincon_Woocommerce {
 		if ( defined( 'FINCON_WOOCOMMERCE_VERSION' ) ) {
 			$this->version = FINCON_WOOCOMMERCE_VERSION;
 		} else {
-			$this->version = '1.0.0';
+			$this->version = '1.0.1';
 		}
 		$this->plugin_name = 'fincon-woocommerce';
 
@@ -200,7 +200,7 @@ class Fincon_Woocommerce {
 
 		$plugin_admin = new Fincon_Woocommerce_Admin( $this->get_plugin_name(), $this->get_version() );
 
-		$this->loader->add_action('plugins_loaded', $plugin_admin, 'check_for_update' );
+		$this->loader->add_action( 'plugins_loaded', $plugin_admin, 'check_for_update' );
 
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
