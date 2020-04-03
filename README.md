@@ -1,5 +1,5 @@
 # Fincon Woocommerce
-### In Development / Current Version: 1.1.0
+### In Development / Current Version: 1.1.1
 Connects your [Fincon](https://fincon.co.za/) accounting system WebAPI to Woocommerce.
 
 ### Requirements
