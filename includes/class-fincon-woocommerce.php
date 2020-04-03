@@ -179,11 +179,10 @@ class Fincon_Woocommerce {
 
 		$this->loader->add_action( 'init', $plugin_admin, 'setup_cron_schedules', 999);
 
+		$this->loader->add_action( 'admin_notices', $plugin_admin, 'display_api_notice');
 
-		if(get_option('fincon_woocommerce_active') == 'yes'):
 
-			//$this->loader->add_action( 'admin_menu', $plugin_admin, 'check_api' );
-			//$this->loader->add_action( 'admin_notices', $plugin_admin, 'display_api_notice');
+		if(get_option('fincon_woocommerce_active') == 'yes'):			
 
 			$this->loader->add_filter( 'in_admin_header', $plugin_admin, 'in_admin_header');
 
@@ -193,6 +192,7 @@ class Fincon_Woocommerce {
 			$this->loader->add_action( 'wp_ajax_fincon_woocommerce_ajax_create_sales_order', $plugin_admin, 'ajax_create_so');
 			$this->loader->add_action( 'wp_ajax_nopriv_fincon_woocommerce_ajax_create_sales_order', $plugin_admin, 'ajax_create_so');
 
+			$this->loader->add_action( 'fincon_woocommerce_check_status', $plugin_admin, 'check_api');
 			$this->loader->add_action( 'fincon_woocommerce_sync_products', $plugin_admin, 'sync_stock_items');
 			$this->loader->add_action( 'fincon_woocommerce_sync_accounts', $plugin_admin, 'sync_user_items');
 

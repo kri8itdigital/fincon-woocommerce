@@ -124,6 +124,18 @@ class Fincon_Woocommerce_Admin {
 	 */
 	public function setup_cron_schedules(){
 
+
+		if (! wp_next_scheduled( 'fincon_woocommerce_check_status')):
+
+
+			$_INTERVAL = get_option('fincon_woocommerce_interval');
+
+			wp_schedule_event(time(), $_INTERVAL, 'fincon_woocommerce_check_status');
+
+
+		endif;
+
+
 		if(get_option('fincon_woocommerce_sync_stock') == 'yes'):
 
 
@@ -307,6 +319,29 @@ class Fincon_Woocommerce_Admin {
 	/**
 	 * Checks whether the Fincon Connection is active
 	 *
+	 * @since    1.1.1
+	 */
+	public static function check_details($URL, $UN, $PW, $DATA, $EXT){
+
+		$_FINCON = new fincon();
+		$_LIVE = $_FINCON->ValidateCustom($URL, $UN, $PW, $DATA, $EXT);
+
+		$GLOBALS['finconactivemsg'] = '';
+		$GLOBALS['fincondownmsg'] = '';
+
+		if($_LIVE['return']):
+			update_option('fincon_woocommerce_admin_message_text', 'Fincon <strong><em>is</em></strong> connected.');
+			update_option('fincon_woocommerce_admin_message_type', 'notice-info');
+		else:
+			update_option('fincon_woocommerce_admin_message_text', 'Fincon is <strong><em>not</em></strong> connected: '.$_LIVE['ErrorString']);
+			update_option('fincon_woocommerce_admin_message_type', 'notice-error');
+		endif;
+
+	}
+
+	/**
+	 * Checks whether the Fincon Connection is active
+	 *
 	 * @since    1.0.0
 	 */
 	public function check_api(){
@@ -318,10 +353,41 @@ class Fincon_Woocommerce_Admin {
 		$GLOBALS['fincondownmsg'] = '';
 
 		if($_LIVE['return']):
-			$GLOBALS['finconactivemsg'] = 'Fincon <strong><em>is</em></strong> connected.';
+			update_option('fincon_woocommerce_admin_message_text', 'Fincon <strong><em>is</em></strong> connected.');
+			update_option('fincon_woocommerce_admin_message_type', 'notice-info');
 		else:
-			$GLOBALS['fincondownmsg'] = 'Fincon is <strong><em>not</em></strong> connected: '.$_LIVE['ErrorString'];
+			update_option('fincon_woocommerce_admin_message_text', 'Fincon is <strong><em>not</em></strong> connected: '.$_LIVE['ErrorString']);
+			update_option('fincon_woocommerce_admin_message_type', 'notice-error');
+
+			update_option('fincon_woocommerce_active', 'no');
+
+			if(get_option('fincon_woocommerce_enable_emails') == 'yes'):
+				$this->do_email_notification($_LIVE['ErrorString']);
+			endif;
+
 		endif;
+
+	}
+
+	/**
+	 * Checks whether the Fincon Connection is active
+	 *
+	 * @since    1.1.1
+	 */
+	public function do_email_notification($_ERROR){
+
+		$_SEND_TO = get_option('fincon_woocommerce_email_list');
+		$_SUBJECT = get_option('fincon_woocommerce_email_subject');
+
+		$_MESSAGE = '<p>To whom it may concern, </p>';
+		$_MESSAGE .= '<p>This is a courtesy email to inform you that the Fincon connection on your website <strong>'.get_bloginfo('name').'</strong> has gone down.</p>';
+		$_MESSAGE .= '<p>The error that has been logged is: <strong>'.$_ERROR.'</strong></p>';
+		$_MESSAGE .= '<p>The sync has been disabled automatically for now. Please check your settings and adjust accordingly.</p>';
+		$_MESSAGE .= '<p>Fincon Accounting.</p>';
+
+		$_HEADERS = array('Content-Type: text/html; charset=UTF-8');
+
+		wp_mail($_SEND_TO, $_SUBJECT, $_MESSAGE, $_HEADERS);
 
 	}
 
@@ -331,18 +397,14 @@ class Fincon_Woocommerce_Admin {
 	 * @since    1.0.0
 	 */
 	public function display_api_notice() {
-		global $finconactivemsg, $fincondownmsg;
+
+		$_MESSAGE 	= get_option('fincon_woocommerce_admin_message_text');
+		$_TYPE		= get_option('fincon_woocommerce_admin_message_type');
 
 
-		if($finconactivemsg != ''):
+		if($_MESSAGE != ''):
 			?>
-			<div class="notice notice-info is-dismissible"><p> <?php _e($finconactivemsg); ?></p></div>
-			<?php
-		endif;
-
-		if($fincondownmsg != ''):
-			?>
-			<div class="notice notice-error is-dismissible"><p> <?php _e($fincondownmsg); ?></p></div>
+			<div class="notice <?php echo $_TYPE; ?> is-dismissible"><p> <?php _e($_MESSAGE); ?></p></div>
 			<?php
 		endif;
 	}

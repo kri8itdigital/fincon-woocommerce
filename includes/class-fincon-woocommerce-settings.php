@@ -21,9 +21,10 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 
 	public function get_sections() {
 		$sections = array(
-			''                => __( 'General Settings', 'woocommerce' ),
-			'products'            => __( 'Products', 'woocommerce' ),
-			'users'        => __( 'Users', 'woocommerce' )
+			''                => __( 'General Settings', 'fincon-woocommerce' ),
+			'products'            => __( 'Products', 'fincon-woocommerce' ),
+			'users'        => __( 'Users', 'fincon-woocommerce' ),
+			'emails'        => __( 'Emails', 'fincon-woocommerce' )
 		);
 
 		return apply_filters( 'woocommerce_get_sections_' . $this->id, $sections );
@@ -254,11 +255,52 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 						'default'       => '',
 						'type'          => 'text'
 					),
+					/*
 					array(
 						'title'         => __( 'Sales Rep Code', 'fincon-woocommerce' ),
 						'desc'          => __( 'For New Users', 'fincon-woocommerce' ),
 						'id'            => 'fincon_woocommerce_sales_rep',
 						'default'       => '',
+						'type'          => 'text'
+					),
+					*/
+					array(
+						'type' => 'sectionend',
+						'id'   => 'fincon_woocommerce_settings',
+					),
+				);
+
+			break;
+
+
+			case 'emails':
+
+				$kri8it_settings = array(
+					array(
+						'title' => __( 'Fincon Settings', 'fincon-woocommerce' ),
+						'type'  => 'title',
+						'id'    => 'fincon_woocommerce_settings',
+					),
+					array(
+						'title'         => __( 'Section Options', 'fincon-woocommerce' ),
+						'desc'          => __( 'Enable Emails', 'fincon-woocommerce' ),
+						'id'            => 'fincon_woocommerce_enable_emails',
+						'default'       => 'no',
+						'checkboxgroup' => '',
+						'type'          => 'checkbox'
+					),
+					array(
+						'title'         => __( 'Email Address', 'fincon-woocommerce' ),
+						'desc'          => __( 'The email address that will be notified if Fincon disconnects', 'fincon-woocommerce' ),
+						'id'            => 'fincon_woocommerce_email_list',
+						'default'       => '',
+						'type'          => 'text'
+					),
+					array(
+						'title'         => __( 'Email Subject', 'fincon-woocommerce' ),
+						'desc'          => __( 'The email Subject', 'fincon-woocommerce' ),
+						'id'            => 'fincon_woocommerce_email_subject',
+						'default'       => 'Fincon connection on '.get_bloginfo('name').' has gone down',
 						'type'          => 'text'
 					),
 					array(
@@ -280,35 +322,214 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 		return apply_filters( 'woocommerce_get_settings_' . $this->id, $settings );
 	}
 
-	/*
+	
+
+	/**
+	 * Save settings.
+	 *
+	 * @return array
+	 */
 	public function save(){
 
-		$settings = $this->get_settings( );
+		$settings = $this->get_settings();
 
-		var_dump($_POST);
 
-		if($_POST['fincon_woocommerce_active'] == '1'):
+		switch($_GET['section']):
 
-			if(!isset($_POST['fincon_woocommerce_url']) || $_POST['fincon_woocommerce_url'] = ""):
-				WC_Admin_Settings::add_error("Fincon URL is required");
-			endif;
+			case "":
 
-			if(!isset($_POST['fincon_woocommerce_username']) || $_POST['fincon_woocommerce_username'] = ""):
-				WC_Admin_Settings::add_error("Fincon Username is required");
-			endif;
 
-			if(!isset($_POST['fincon_woocommerce_password']) || $_POST['fincon_woocommerce_password'] = ""):
-				WC_Admin_Settings::add_error("Fincon Password is required");
-			endif;
 
-			if(!isset($_POST['fincon_woocommerce_data']) || $_POST['fincon_woocommerce_data'] = ""):
-				WC_Admin_Settings::add_error("Fincon Data ID is required");
-			endif;
+				$_ERRORS = false;
 
-		endif;
+				/* GENERAL SETTINGS */
+
+				if($_POST['fincon_woocommerce_url'] == ''):
+					$_POST['fincon_woocommerce_active'] = 0;
+					WC_Admin_Settings::add_error('Fincon URL is required');
+							$_ERRORS = true;
+				endif;
+
+				if($_POST['fincon_woocommerce_username'] == ''):
+					$_POST['fincon_woocommerce_active'] = 0;
+					WC_Admin_Settings::add_error('Fincon USERNAME is required');
+							$_ERRORS = true;
+				endif;
+
+				if($_POST['fincon_woocommerce_password'] == ''):
+					$_POST['fincon_woocommerce_active'] = 0;
+					WC_Admin_Settings::add_error('Fincon PASSWORD is required');
+							$_ERRORS = true;
+				endif;
+
+				if($_POST['fincon_woocommerce_data'] == ''):
+					$_POST['fincon_woocommerce_active'] = 0;
+					WC_Admin_Settings::add_error('Fincon DATA ID is required');
+							$_ERRORS = true;
+				endif;
+
+				if($_POST['fincon_woocommerce_active'] == 1):
+
+					$URL 	= $_POST['fincon_woocommerce_url'];
+					$UN 	= $_POST['fincon_woocommerce_username'];
+					$PW 	= $_POST['fincon_woocommerce_password'];
+					$DATA 	= $_POST['fincon_woocommerce_data'];
+					$EXT 	= $_POST['fincon_woocommerce_ext'];
+
+					if($EXT == 1):
+						$EXT = true;
+					else:
+						$EXT = false;
+					endif;
+
+					Fincon_Woocommerce_Admin::check_details($URL, $UN, $PW, $DATA, $EXT);
+
+					if(get_option('fincon_woocommerce_admin_message_type') == 'notice-error'):
+
+						$_POST['fincon_woocommerce_active'] = 0;
+						$_ERRORS = true;
+
+						WC_Admin_Settings::add_error('Could not connect to FINCON - please check the details');
+
+					endif;
+
+					if(!$_ERRORS):
+
+						if(get_option('fincon_woocommerce_sync_stock') == 'yes' && !get_option('fincon_woocommerce_do_inital_product_sync')):
+							do_action('fincon_woocommerce_sync_products');
+							update_option('fincon_woocommerce_do_inital_product_sync', 'yes');
+							WC_Admin_Settings::add_message('Initial Product Sync has begun - this may take a while to complete.');
+						endif;
+
+						if(get_option('fincon_woocommerce_sync_users') == 'yes' && !get_option('fincon_woocommerce_do_inital_user_sync')):
+							do_action('fincon_woocommerce_sync_accounts');
+							update_option('fincon_woocommerce_do_inital_user_sync', 'yes');
+							WC_Admin_Settings::add_message('Initial User Sync has begun - this may take a while to complete.');
+						endif;
+					endif;
+
+				endif;
+				
+
+			break;
+
+			case "products":
+
+				$_ERRORS = false;
+				
+				/* PRODUCT SETTINGS */
+
+				if(get_option('fincon_woocommerce_active') == 'yes'):
+
+					if($_POST['fincon_woocommerce_sync_stock'] == 1):
+
+						if($_POST['fincon_woocommerce_location'] == ''):
+							$_POST['fincon_woocommerce_sync_stock'] = 0;
+							WC_Admin_Settings::add_error('Stock location is required');
+							$_ERRORS = true;
+						endif;
+
+						if($_POST['fincon_woocommerce_delivery'] == ''):
+							$_POST['fincon_woocommerce_sync_stock'] = 0;
+							WC_Admin_Settings::add_error('SKU for delivery item required');
+							$_ERRORS = true;
+						endif;
+
+						if($_POST['fincon_woocommerce_coupon'] == ''):
+							$_POST['fincon_woocommerce_sync_stock'] = 0;
+							WC_Admin_Settings::add_error('SKU for coupon item required');
+							$_ERRORS = true;
+						endif;
+
+
+						if(!$_ERRORS && !get_option('fincon_woocommerce_do_inital_product_sync')):
+							do_action('fincon_woocommerce_sync_products');
+							update_option('fincon_woocommerce_do_inital_product_sync', 'yes');
+							WC_Admin_Settings::add_message('Initial Product Sync has begun - this may take a while to complete.');
+						endif;
+
+
+					endif;
+
+					else:
+
+						$_POST['fincon_woocommerce_sync_stock'] = 0;
+						$_POST['fincon_woocommerce_validate_add'] = 0;
+						$_POST['fincon_woocommerce_validate_checkout'] = 0;
+						$_POST['fincon_woocommerce_exclude_order'] = 0;
+						$_POST['fincon_woocommerce_delivery'] 	= '';
+						$_POST['fincon_woocommerce_coupon'] 	= '';
+
+						WC_Admin_Settings::add_error('Cannot save Product settings - please ensure Fincon is correctly enabled first.');
+				endif;
+
+			break;
+
+			case "users":
+
+				$_ERRORS = false;
+				
+				/* USER SETTINGS */
+
+				if(get_option('fincon_woocommerce_active') == 'yes'):
+
+					if($_POST['fincon_woocommerce_sync_users'] == 1):
+
+						if($_POST['fincon_woocommerce_account'] == ''):
+							$_POST['fincon_woocommerce_sync_users'] = 0;
+							$_ERRORS = true;
+							WC_Admin_Settings::add_error('DEBTOR account required for Guest orders');
+						endif;
+
+
+						if(!$_ERRORS && !get_option('fincon_woocommerce_do_inital_user_sync')):
+							do_action('fincon_woocommerce_sync_accounts');
+							update_option('fincon_woocommerce_do_inital_user_sync', 'yes');
+							WC_Admin_Settings::add_message('Initial User Sync has begun - this may take a while to complete.');
+						endif;
+
+					endif;
+
+				else:
+
+					$_POST['fincon_woocommerce_sync_users'] 		= 0;
+					$_POST['fincon_woocommerce_one_debtor_account'] = 0;
+					$_POST['fincon_woocommerce_account'] 			= '';
+
+					WC_Admin_Settings::add_error('Cannot save User settings - please ensure Fincon is correctly enabled first.');
+
+
+				endif;
+
+
+
+			break;
+
+
+			case "emails":
+
+				if($_POST['fincon_woocommerce_enable_emails'] == 1):
+
+					if($_POST['fincon_woocommerce_email_list'] == ''):
+						$_POST['fincon_woocommerce_enable_emails'] = 0;
+						WC_Admin_Settings::add_error('Email address is required');
+					endif;
+
+					if($_POST['fincon_woocommerce_email_subject'] == ''):
+						$_POST['fincon_woocommerce_enable_emails'] = 0;
+						WC_Admin_Settings::add_error('Subject is required');
+					endif;
+
+				endif;
+
+			break;
+
+		endswitch;
+
+
 
 		WC_Admin_Settings::save_fields( $settings );
 
 	}
-	*/
+	
 }

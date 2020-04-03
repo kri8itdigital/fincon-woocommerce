@@ -1,3 +1,9 @@
+= 1.1.1 - April 3, 2020 =
+* Feature: Checking for Local Pickup as a shipping option - and marking on SO as 'C' or 'R'
+* Feature: Email system for if the connection goes down
+* Update: Rework of Status Check Scheduling
+* Update: Settings validation
+
 = 1.1.0 - April 2, 2020 =
 * Initial Production Release
 * Feature: Sync products from Fincon to Woocommerce

@@ -109,7 +109,31 @@ class fincon{
 
 		$_LOGIN = $this->_SOAP->LogIn($this->_D, $this->_UN, $this->_PW, $this->_ID, $this->_ERR, $this->_EXT);
 		
-		$this->Logout();
+		$this->LogOut();
+
+		return $_LOGIN;
+
+	}
+
+
+
+
+
+
+
+
+
+	
+	/*
+	HELPER - VALIDATE
+	 */
+	public function ValidateCustom($URL, $UN, $PW, $DATA, $EXT){
+
+		$_TEST_SOAP = new SoapClient($URL); 
+
+		$_LOGIN = $_TEST_SOAP->LogIn($DATA, $UN, $PW, 0, array(), $EXT);
+		
+		$_TEST_SOAP->LogOut();
 
 		return $_LOGIN;
 
@@ -775,6 +799,20 @@ class fincon{
 
 		endif;
 
+
+		$_METHODS = $_ORDER->get_shipping_methods();
+		$_THIS_METHOD = '';
+
+		foreach($_METHODS as $_METHOD):
+
+			if($_METHOD['method_id'] == 'local_pickup'):
+				$_THIS_METHOD = 'C';
+			else:
+				$_THIS_METHOD = 'R';
+			endif;
+
+		endforeach;
+
 		if($_DEP):
 
 			$_SO->AccNo 			= $_ACC_TO_USE;
@@ -799,7 +837,7 @@ class fincon{
 			$_SO->DelInstruc4 		= $_DEP->DelInstruc4;
 			$_SO->DelInstruc5 		= $_DEP->DelInstruc5;
 			$_SO->DelInstruc6 		= $_DEP->DelInstruc6;
-			$_SO->DeliveryMethod 	= $_ORDER->get_shipping_method();
+			$_SO->DeliveryMethod 	= $_THIS_METHOD;
 			$_SO->RepCode 			= $_DEP->RepCode;
 			$_SO->TaxNo 			= $_DEP->TaxNo;
 
@@ -839,7 +877,7 @@ class fincon{
 
 		if(count($_SALES_ORDER_DETAILS) > 0):
 
-			if($_ORDER->get_shipping_method()):
+			if($_THIS_METHOD == 'R'):
 				$_SHIPPING_LINE = $this->GetShipping($_ORDER);
 
 				if($_SHIPPING_LINE && $_SHIPPING_LINE->ItemNo):
