@@ -1,3 +1,7 @@
+= 1.1.2 - April 6, 2020 =
+* Fix: Activation method and initial imports
+* Update: Validation of main settings
+
 = 1.1.1 - April 3, 2020 =
 * Feature: Checking for Local Pickup as a shipping option - and marking on SO as 'C' or 'R'
 * Feature: Email system for if the connection goes down

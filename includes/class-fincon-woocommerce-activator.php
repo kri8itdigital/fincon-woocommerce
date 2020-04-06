@@ -31,6 +31,11 @@ class Fincon_Woocommerce_Activator {
 	 */
 	public static function activate() {
 
+		if ( ! is_plugin_active( 'woocommerce/woocommerce.php' ) and current_user_can( 'activate_plugins' ) ) {
+	    
+	    wp_die('Sorry, but the Fincon Woocommerce plugin requires woocommerce to be enabled. <br><a href="' . admin_url( 'plugins.php' ) . '">&laquo; Return to Plugins</a>');
+
+	    }
 	}
 
 }

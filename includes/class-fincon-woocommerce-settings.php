@@ -333,8 +333,14 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 
 		$settings = $this->get_settings();
 
+		if(isset($_GET['section'])):
+			$_SECTION = $_GET['section'];
+		else:
+			$_SECTION = '';
+		endif;
 
-		switch($_GET['section']):
+
+		switch($_SECTION):
 
 			case "":
 
@@ -368,13 +374,18 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 							$_ERRORS = true;
 				endif;
 
-				if($_POST['fincon_woocommerce_active'] == 1):
+				if(isset($_POST['fincon_woocommerce_active']) && $_POST['fincon_woocommerce_active'] == 1):
 
 					$URL 	= $_POST['fincon_woocommerce_url'];
 					$UN 	= $_POST['fincon_woocommerce_username'];
 					$PW 	= $_POST['fincon_woocommerce_password'];
 					$DATA 	= $_POST['fincon_woocommerce_data'];
-					$EXT 	= $_POST['fincon_woocommerce_ext'];
+
+					if(isset($_POST['fincon_woocommerce_ext'])):
+						$EXT 	= $_POST['fincon_woocommerce_ext'];
+					else:
+						$EXT 	= 0;
+					endif;
 
 					if($EXT == 1):
 						$EXT = true;
@@ -396,15 +407,11 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 					if(!$_ERRORS):
 
 						if(get_option('fincon_woocommerce_sync_stock') == 'yes' && !get_option('fincon_woocommerce_do_inital_product_sync')):
-							do_action('fincon_woocommerce_sync_products');
-							update_option('fincon_woocommerce_do_inital_product_sync', 'yes');
-							WC_Admin_Settings::add_message('Initial Product Sync has begun - this may take a while to complete.');
+							WC_Admin_Settings::add_message('Initial Product Sync will begin soon - this may take a while to complete.');
 						endif;
 
 						if(get_option('fincon_woocommerce_sync_users') == 'yes' && !get_option('fincon_woocommerce_do_inital_user_sync')):
-							do_action('fincon_woocommerce_sync_accounts');
-							update_option('fincon_woocommerce_do_inital_user_sync', 'yes');
-							WC_Admin_Settings::add_message('Initial User Sync has begun - this may take a while to complete.');
+							WC_Admin_Settings::add_message('Initial User Sync will begin soon - this may take a while to complete.');
 						endif;
 					endif;
 
@@ -421,7 +428,7 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 
 				if(get_option('fincon_woocommerce_active') == 'yes'):
 
-					if($_POST['fincon_woocommerce_sync_stock'] == 1):
+					if(isset($_POST['fincon_woocommerce_sync_stock']) && $_POST['fincon_woocommerce_sync_stock'] == 1):
 
 						if($_POST['fincon_woocommerce_location'] == ''):
 							$_POST['fincon_woocommerce_sync_stock'] = 0;
@@ -443,9 +450,7 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 
 
 						if(!$_ERRORS && !get_option('fincon_woocommerce_do_inital_product_sync')):
-							do_action('fincon_woocommerce_sync_products');
-							update_option('fincon_woocommerce_do_inital_product_sync', 'yes');
-							WC_Admin_Settings::add_message('Initial Product Sync has begun - this may take a while to complete.');
+							WC_Admin_Settings::add_message('Initial Product Sync will begin soon - this may take a while to complete.');
 						endif;
 
 
@@ -473,7 +478,7 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 
 				if(get_option('fincon_woocommerce_active') == 'yes'):
 
-					if($_POST['fincon_woocommerce_sync_users'] == 1):
+					if(isset($_POST['fincon_woocommerce_sync_users']) && $_POST['fincon_woocommerce_sync_users'] == 1):
 
 						if($_POST['fincon_woocommerce_account'] == ''):
 							$_POST['fincon_woocommerce_sync_users'] = 0;
@@ -483,9 +488,7 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 
 
 						if(!$_ERRORS && !get_option('fincon_woocommerce_do_inital_user_sync')):
-							do_action('fincon_woocommerce_sync_accounts');
-							update_option('fincon_woocommerce_do_inital_user_sync', 'yes');
-							WC_Admin_Settings::add_message('Initial User Sync has begun - this may take a while to complete.');
+							WC_Admin_Settings::add_message('Initial User Sync will begin soon - this may take a while to complete.');
 						endif;
 
 					endif;

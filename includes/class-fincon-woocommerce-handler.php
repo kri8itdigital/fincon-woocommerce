@@ -127,13 +127,15 @@ class fincon{
 	/*
 	HELPER - VALIDATE
 	 */
-	public function ValidateCustom($URL, $UN, $PW, $DATA, $EXT){
+	public static function ValidateCustom($URL, $UN, $PW, $DATA, $EXT){
 
 		$_TEST_SOAP = new SoapClient($URL); 
 
-		$_LOGIN = $_TEST_SOAP->LogIn($DATA, $UN, $PW, 0, array(), $EXT);
+		$_KILL = $_TEST_SOAP->KillUsers('0.0');
+
+		$_LOGIN = $_TEST_SOAP->LogIn($DATA, $UN, $PW, 0, '', $EXT);
 		
-		$_TEST_SOAP->LogOut();
+		$_TEST_SOAP->LogOut($_LOGIN['ConnectID'], '');
 
 		return $_LOGIN;
 

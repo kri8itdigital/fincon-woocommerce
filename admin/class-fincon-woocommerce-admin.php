@@ -101,6 +101,46 @@ class Fincon_Woocommerce_Admin {
 
 	}
 
+	
+
+	/**
+	 * Set Cron Schedules for intial import
+	 *
+	 * @since    1.1.2
+	 */
+	public function setup_initial_schedules(){
+
+
+		if(get_option('fincon_woocommerce_active') == 'yes'):
+
+			if(get_option('fincon_woocommerce_sync_stock') == 'yes' && !get_option('fincon_woocommerce_do_inital_product_sync')):
+
+				if(!get_option('fincon_woocommerce_product_sync_running') || get_option('fincon_woocommerce_product_sync_running') == 'no'):
+
+					wp_schedule_single_event(time(), 'fincon_woocommerce_sync_products');
+
+					update_option('fincon_woocommerce_do_inital_product_sync', 'yes');
+
+				endif;
+				
+			endif;
+
+			if(get_option('fincon_woocommerce_sync_accounts') == 'yes' && !get_option('fincon_woocommerce_do_inital_user_sync')):
+
+				if(!get_option('fincon_woocommerce_user_sync_running') || get_option('fincon_woocommerce_user_sync_running') == 'no'):
+
+					wp_schedule_single_event(time(), 'fincon_woocommerce_sync_accounts');
+
+					update_option('fincon_woocommerce_do_inital_user_sync', 'yes');
+
+				endif;
+
+			endif;
+
+		endif;
+
+	}
+
 	/**
 	 * Get Cron Schedules
 	 *
@@ -112,6 +152,13 @@ class Fincon_Woocommerce_Admin {
 	        'interval' => 7200,
 	        'display'  => esc_html__( 'Every Two Hours' ),
 	    );
+
+	    $schedules['fiveseconds'] = array(
+        	'interval' => 5,
+        	'display'  => esc_html__( 'Every Five Seconds' ), 
+    	);
+
+
 
 		return $schedules;
 
@@ -323,8 +370,7 @@ class Fincon_Woocommerce_Admin {
 	 */
 	public static function check_details($URL, $UN, $PW, $DATA, $EXT){
 
-		$_FINCON = new fincon();
-		$_LIVE = $_FINCON->ValidateCustom($URL, $UN, $PW, $DATA, $EXT);
+		$_LIVE = fincon::ValidateCustom($URL, $UN, $PW, $DATA, $EXT);
 
 		$GLOBALS['finconactivemsg'] = '';
 		$GLOBALS['fincondownmsg'] = '';
@@ -484,7 +530,7 @@ class Fincon_Woocommerce_Admin {
 	public static function sync_stock_items(){
 			
 
-		if(get_option('fincon_woocommerce_product_sync_running') == 'no'):
+		if(!get_option('fincon_woocommerce_product_sync_running') || get_option('fincon_woocommerce_product_sync_running') == 'no'):
 
 			set_time_limit(0);
 
@@ -526,9 +572,8 @@ class Fincon_Woocommerce_Admin {
 	 */
 	public static function sync_user_items(){		
 		
-		if(get_option('fincon_woocommerce_user_sync_running') == 'no'):
+		if(!get_option('fincon_woocommerce_user_sync_running') || get_option('fincon_woocommerce_user_sync_running') == 'no'):
 			
-
 			set_time_limit(0);
 
 			update_option('fincon_woocommerce_user_sync_running', 'yes');

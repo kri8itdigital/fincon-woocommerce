@@ -31,6 +31,11 @@ class Fincon_Woocommerce_Deactivator {
 	 */
 	public static function deactivate() {
 
+		/* REMOVE IT FROM BEING ACTIVE */
+		delete_option('fincon_woocommerce_active');
+		delete_option('fincon_woocommerce_sync_orders');
+		delete_option('fincon_woocommerce_sync_stock');
+		delete_option('fincon_woocommerce_sync_users');
 
 		/* STATUS CRON */
 		wp_clear_scheduled_hook('fincon_woocommerce_check_status');

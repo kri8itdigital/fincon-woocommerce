@@ -370,7 +370,12 @@ class fincon_updater
     public function get_changelog()
     {
         $_changelog = $this->remote_get( $this->config['raw_url'] . '/changelog.txt' );
-        $_changelog = nl2br( $_changelog['body'] );
+
+        if(!is_wp_error($_changelog)):
+            $_changelog = nl2br( $_changelog['body'] );
+        else:
+            $_changelog = '';
+        endif;
         // return
         return ( !empty( $_changelog ) ? $_changelog : 'Could not get changelog from server.' );
     }
