@@ -371,7 +371,7 @@ class fincon_updater
     {
         $_changelog = $this->remote_get( $this->config['raw_url'] . '/changelog.txt' );
 
-        if(!is_wp_error($_changelog)):
+        if(!is_wp_error($_changelog) && !is_a($_changelog, 'WP_Error')):
             $_changelog = nl2br( $_changelog['body'] );
         else:
             $_changelog = '';
