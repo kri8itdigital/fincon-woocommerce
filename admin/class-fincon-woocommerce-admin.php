@@ -831,7 +831,6 @@ class Fincon_Woocommerce_Admin {
 	public static function fincon_user_sync_partial($_FINCON, $_DATE_TO_WORK_WITH){
 		
 		$_DATA = $_FINCON->GetAccountsChanged($_DATE_TO_WORK_WITH);
-		var_dump($_DATA);
 		$_LIST = $_DATA['AccountList'];
 		if(is_array($_LIST)):
 			foreach($_LIST as $_ITEM):

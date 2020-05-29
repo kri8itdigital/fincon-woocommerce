@@ -1,3 +1,6 @@
+= 1.1.4 - May 29, 2020 =
+* Fix: Better handling of SOAP socket errors for connection
+
 = 1.1.3 - May 26, 2020 =
 * Fix: Github Updater Error Checking
 

@@ -89,7 +89,15 @@ class fincon{
 			$this->_CREATE = false;
 		endif;
 
-		$this->_SOAP = new SoapClient($this->_URL);
+		try{
+			$this->_SOAP = new SoapClient($this->_URL);
+		}
+		catch(Exception $e){
+			update_option('fincon_woocommerce_admin_message_text', 'Fincon is <strong><em>not</em></strong> connected: '.$e->getMessage());
+			update_option('fincon_woocommerce_admin_message_type', 'notice-error');
+
+			update_option('fincon_woocommerce_active', 'no');
+		}
 
 	}
 
