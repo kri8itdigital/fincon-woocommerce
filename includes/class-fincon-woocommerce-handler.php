@@ -621,7 +621,7 @@ class fincon{
 			$_DETAIL->Quantity 		= 1;
 			$_DETAIL->LineTotalExcl = number_format($_ORDER->get_shipping_total(), 2);
 			$_DETAIL->TaxCode 		= $_ITEM->TaxCode;
-			$_DETAIL->LineTotalIncl = number_format($_ORDER->get_shipping_total() + $order->get_shipping_tax(), 2);
+			$_DETAIL->LineTotalIncl = number_format($_ORDER->get_shipping_total() + $_ORDER->get_shipping_tax(), 2);
 			$_DETAIL->Description 	= $_ITEM->Description.'-'.$_ORDER->get_shipping_method();
 
 			return $_DETAIL;

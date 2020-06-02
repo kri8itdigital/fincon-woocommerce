@@ -1,3 +1,6 @@
+= 1.1.5 - June 2, 2020 =
+* Fix: Shipping calculation
+
 = 1.1.4 - May 29, 2020 =
 * Fix: Better handling of SOAP socket errors for connection
 
