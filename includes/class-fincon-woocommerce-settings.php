@@ -283,24 +283,38 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 					),
 					array(
 						'title'         => __( 'Section Options', 'fincon-woocommerce' ),
-						'desc'          => __( 'Enable Emails', 'fincon-woocommerce' ),
-						'id'            => 'fincon_woocommerce_enable_emails',
+						'desc'          => __( 'Enable Connection Failure Email', 'fincon-woocommerce' ),
+						'id'            => 'fincon_woocommerce_enable_connection_email',
+						'default'       => 'no',
+						'checkboxgroup' => 'start',
+						'type'          => 'checkbox'
+					),
+					array(
+						'desc'          => __( 'Enable Product Sync Completion Email', 'fincon-woocommerce' ),
+						'id'            => 'fincon_woocommerce_enable_product_email',
 						'default'       => 'no',
 						'checkboxgroup' => '',
 						'type'          => 'checkbox'
 					),
 					array(
-						'title'         => __( 'Email Address', 'fincon-woocommerce' ),
-						'desc'          => __( 'The email address that will be notified if Fincon disconnects', 'fincon-woocommerce' ),
-						'id'            => 'fincon_woocommerce_email_list',
-						'default'       => '',
-						'type'          => 'text'
+						'desc'          => __( 'Enable User Sync Completion Email', 'fincon-woocommerce' ),
+						'id'            => 'fincon_woocommerce_enable_user_email',
+						'default'       => 'no',
+						'checkboxgroup' => '',
+						'type'          => 'checkbox'
 					),
 					array(
-						'title'         => __( 'Email Subject', 'fincon-woocommerce' ),
-						'desc'          => __( 'The email Subject', 'fincon-woocommerce' ),
-						'id'            => 'fincon_woocommerce_email_subject',
-						'default'       => 'Fincon connection on '.get_bloginfo('name').' has gone down',
+						'desc'          => __( 'Enable Sales Order Failure Email', 'fincon-woocommerce' ),
+						'id'            => 'fincon_woocommerce_enable_so_email',
+						'default'       => 'no',
+						'checkboxgroup' => 'end',
+						'type'          => 'checkbox'
+					),
+					array(
+						'title'         => __( 'Email Address', 'fincon-woocommerce' ),
+						'desc'          => __( 'The email address that will be notified', 'fincon-woocommerce' ),
+						'id'            => 'fincon_woocommerce_email_list',
+						'default'       => '',
 						'type'          => 'text'
 					),
 					array(
@@ -407,11 +421,21 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 					if(!$_ERRORS):
 
 						if(get_option('fincon_woocommerce_sync_stock') == 'yes' && !get_option('fincon_woocommerce_do_inital_product_sync')):
+
 							WC_Admin_Settings::add_message('Initial Product Sync will begin soon - this may take a while to complete.');
+
+							update_option('fincon_woocommerce_do_inital_product_sync', 'yes');
+							update_option('fincon_woocommerce_do_inital_product_sync_date', wp_date('Y/m/d H:i:s'));
+
 						endif;
 
 						if(get_option('fincon_woocommerce_sync_users') == 'yes' && !get_option('fincon_woocommerce_do_inital_user_sync')):
+
 							WC_Admin_Settings::add_message('Initial User Sync will begin soon - this may take a while to complete.');
+
+							update_option('fincon_woocommerce_do_inital_user_sync', 'yes');
+							update_option('fincon_woocommerce_do_inital_user_sync_date', wp_date('Y/m/d H:i:s'));
+
 						endif;
 					endif;
 
@@ -451,7 +475,18 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 
 						if(!$_ERRORS && !get_option('fincon_woocommerce_do_inital_product_sync')):
 							WC_Admin_Settings::add_message('Initial Product Sync will begin soon - this may take a while to complete.');
+
+							update_option('fincon_woocommerce_do_inital_product_sync', 'yes');
+							update_option('fincon_woocommerce_do_inital_product_sync_date', wp_date('Y/m/d H:i:s'));
 						endif;
+
+
+					else:
+
+						delete_option('fincon_woocommerce_last_product_update');
+						delete_option('fincon_woocommerce_product_sync_running');
+						delete_option('fincon_woocommerce_do_inital_product_sync');
+						delete_option('fincon_woocommerce_do_inital_product_sync_date');
 
 
 					endif;
@@ -464,6 +499,12 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 						$_POST['fincon_woocommerce_exclude_order'] = 0;
 						$_POST['fincon_woocommerce_delivery'] 	= '';
 						$_POST['fincon_woocommerce_coupon'] 	= '';
+
+						delete_option('fincon_woocommerce_last_product_update');
+						delete_option('fincon_woocommerce_product_sync_running');
+						delete_option('fincon_woocommerce_do_inital_product_sync');
+						delete_option('fincon_woocommerce_do_inital_product_sync_date');
+
 
 						WC_Admin_Settings::add_error('Cannot save Product settings - please ensure Fincon is correctly enabled first.');
 				endif;
@@ -489,7 +530,18 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 
 						if(!$_ERRORS && !get_option('fincon_woocommerce_do_inital_user_sync')):
 							WC_Admin_Settings::add_message('Initial User Sync will begin soon - this may take a while to complete.');
+
+							update_option('fincon_woocommerce_do_inital_user_sync', 'yes');
+							update_option('fincon_woocommerce_do_inital_user_sync_date', wp_date('Y/m/d H:i:s'));
 						endif;
+
+					else:
+
+						
+						delete_option('fincon_woocommerce_last_user_update');
+						delete_option('fincon_woocommerce_user_sync_running');
+						delete_option('fincon_woocommerce_do_inital_user_sync');
+						delete_option('fincon_woocommerce_do_inital_user_sync_date');
 
 					endif;
 
@@ -500,6 +552,12 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 					$_POST['fincon_woocommerce_account'] 			= '';
 
 					WC_Admin_Settings::add_error('Cannot save User settings - please ensure Fincon is correctly enabled first.');
+
+					
+					delete_option('fincon_woocommerce_last_user_update');
+					delete_option('fincon_woocommerce_user_sync_running');
+					delete_option('fincon_woocommerce_do_inital_user_sync');
+					delete_option('fincon_woocommerce_do_inital_user_sync_date');
 
 
 				endif;

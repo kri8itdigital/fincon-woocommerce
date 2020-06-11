@@ -1,3 +1,8 @@
+= 1.2.0 - June 11, 2020 =
+* Feature: Status Page
+* Feature: Log System
+* Feature: Streamlined Emailing Options and added additional emails
+
 = 1.1.5 - June 2, 2020 =
 * Fix: Shipping calculation
 

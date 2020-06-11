@@ -119,8 +119,6 @@ class Fincon_Woocommerce_Admin {
 
 					wp_schedule_single_event(time(), 'fincon_woocommerce_sync_products');
 
-					update_option('fincon_woocommerce_do_inital_product_sync', 'yes');
-
 				endif;
 				
 			endif;
@@ -130,8 +128,6 @@ class Fincon_Woocommerce_Admin {
 				if(!get_option('fincon_woocommerce_user_sync_running') || get_option('fincon_woocommerce_user_sync_running') == 'no'):
 
 					wp_schedule_single_event(time(), 'fincon_woocommerce_sync_accounts');
-
-					update_option('fincon_woocommerce_do_inital_user_sync', 'yes');
 
 				endif;
 
@@ -179,6 +175,13 @@ class Fincon_Woocommerce_Admin {
 
 			wp_schedule_event(time(), $_INTERVAL, 'fincon_woocommerce_check_status');
 
+
+		endif;
+
+
+		if (! wp_next_scheduled( 'fincon_woocommerce_clean_logs')):
+
+			wp_schedule_event(time(), 'daily', 'fincon_woocommerce_clean_logs');
 
 		endif;
 
@@ -296,10 +299,15 @@ class Fincon_Woocommerce_Admin {
 
 		if(!$this->order_is_deploy($order_id)):
 
-			$_FINCON = new fincon();
+			$_FINCON = new WC_Fincon();
 			$_FINCON->LogIn();
 			$_FINCON->SendSOToFincon($order_id);
 			$_FINCON->LogOut();
+
+
+			if(get_option('fincon_woocommerce_enable_so_email') == 'yes' && get_post_meta($order_id, '_fincon_sales_error', true)):
+				$this->do_email_notification('so', $_FINCON->_ERRORS, $order_id);
+			endif;
 
 		endif;
 
@@ -328,7 +336,7 @@ class Fincon_Woocommerce_Admin {
 
 		$O = $_POST['o'];
 
-		$_FINCON = new fincon();
+		$_FINCON = new WC_Fincon();
 
 		$_FINCON->LogIn();
 		$_FINCON->SendSOToFincon($O);
@@ -356,6 +364,8 @@ class Fincon_Woocommerce_Admin {
 				$_ERRORS_LIST.= '</ol>';
 
 			$_RETURN['errors'] = $_ERRORS_LIST;
+
+
 		endif;
 
 		echo json_encode($_RETURN);			
@@ -370,7 +380,7 @@ class Fincon_Woocommerce_Admin {
 	 */
 	public static function check_details($URL, $UN, $PW, $DATA, $EXT){
 
-		$_LIVE = fincon::ValidateCustom($URL, $UN, $PW, $DATA, $EXT);
+		$_LIVE = WC_Fincon::ValidateCustom($URL, $UN, $PW, $DATA, $EXT);
 
 		$GLOBALS['finconactivemsg'] = '';
 		$GLOBALS['fincondownmsg'] = '';
@@ -383,6 +393,8 @@ class Fincon_Woocommerce_Admin {
 			update_option('fincon_woocommerce_admin_message_type', 'notice-error');
 		endif;
 
+		update_option('fincon_woocommerce_admin_message_date', wp_date('Y/m/d H:i:s'));
+
 	}
 
 	/**
@@ -390,9 +402,9 @@ class Fincon_Woocommerce_Admin {
 	 *
 	 * @since    1.0.0
 	 */
-	public function check_api(){
+	public static function check_api(){
 
-		$_FINCON = new fincon();
+		$_FINCON = new WC_Fincon();
 		$_LIVE = $_FINCON->Validate();
 
 		$GLOBALS['finconactivemsg'] = '';
@@ -407,34 +419,368 @@ class Fincon_Woocommerce_Admin {
 
 			update_option('fincon_woocommerce_active', 'no');
 
-			if(get_option('fincon_woocommerce_enable_emails') == 'yes'):
-				$this->do_email_notification($_LIVE['ErrorString']);
+			if(get_option('fincon_woocommerce_enable_connection_email') == 'yes'):
+				$this->do_email_notification('connection', $_LIVE['ErrorString']);
 			endif;
 
 		endif;
 
+		update_option('fincon_woocommerce_admin_message_date', wp_date('Y/m/d H:i:s'));
+
 	}
 
 	/**
-	 * Checks whether the Fincon Connection is active
+	 * Cleans Old Logs
+	 *
+	 * @since    1.2.0
+	 */
+	public static function clean_logs(){
+		WC_Fincon_Logger::clean();
+	}
+
+	/**
+	 * Email Notifications
 	 *
 	 * @since    1.1.1
 	 */
-	public function do_email_notification($_ERROR){
+	public function do_email_notification($TYPE, $_ERROR = null, $_ID = null){
 
 		$_SEND_TO = get_option('fincon_woocommerce_email_list');
-		$_SUBJECT = get_option('fincon_woocommerce_email_subject');
+
+		$_LOG_FILE = WC_Fincon_Logger::attachment();
+
+		$_ATTACHMENTS = array($_LOG_FILE);
 
 		$_MESSAGE = '<p>To whom it may concern, </p>';
-		$_MESSAGE .= '<p>This is a courtesy email to inform you that the Fincon connection on your website <strong>'.get_bloginfo('name').'</strong> has gone down.</p>';
-		$_MESSAGE .= '<p>The error that has been logged is: <strong>'.$_ERROR.'</strong></p>';
-		$_MESSAGE .= '<p>The sync has been disabled automatically for now. Please check your settings and adjust accordingly.</p>';
+
+
+		$_HAS_ERRORS = false;
+		$_ERROR_TEXT = '';
+
+		if(is_string($_ERROR) && strlen($_ERROR) > 0):
+			$_HAS_ERRORS = true;
+			$_ERROR_TEXT .= '<p>The error that has been logged is: <strong>'.$_ERROR.'</strong></p>';
+		endif;
+
+		if(is_array($_ERROR) && count($_ERROR) > 0):
+			$_HAS_ERRORS = true;
+
+			$_ERROR_TEXT .= '<p><em>The errors encountered were:</em></p>';
+			$_ERROR_TEXT .= '<ul>';
+			foreach($_ERROR as $_ERR):
+				$_ERROR_TEXT .= '<li>'.$_ERR.'</li>';
+			endforeach;
+			$_ERROR_TEXT .= '</ul>';
+		endif;
+
+
+
+
+
+
+
+
+		switch($TYPE):
+
+			case "connection":
+
+				$_SUBJECT = 'Fincon Connection on '.get_bloginfo('name').' has gone down';
+				
+				$_MESSAGE .= '<p>This is a courtesy email to inform you that the Fincon connection on your website <strong>'.get_bloginfo('name').'</strong> has gone down.</p>';
+
+				$_MESSAGE .= '<p>The sync has been disabled automatically for now. Please check your settings and adjust accordingly.</p>';
+
+			break;
+
+			case "products":
+
+				if($_HAS_ERRORS):
+
+					$_SUBJECT = 'Product Sync on '.get_bloginfo('name').' has completed with errors';
+
+				else:
+
+					$_SUBJECT = 'Product Sync on '.get_bloginfo('name').' has completed successfully';
+
+				endif;
+
+				$_MESSAGE .= '<p>This is a courtesy email to inform you that a Fincon product sync on your website <strong>'.get_bloginfo('name').'</strong> has completed.</p>';
+
+			break;
+
+			case "users":
+
+				if($_HAS_ERRORS):
+
+					$_SUBJECT = 'User Sync on '.get_bloginfo('name').' has completed with errors';
+
+				else:
+
+					$_SUBJECT = 'User Sync on '.get_bloginfo('name').' has completed successfully';
+
+				endif;
+
+				$_MESSAGE .= '<p>This is a courtesy email to inform you that a Fincon user sync on your website <strong>'.get_bloginfo('name').'</strong> has completed.</p>';
+
+
+			break;
+
+			case "so":
+
+				$_SUBJECT = 'Sales Order Creation failure on '.get_bloginfo('name');
+
+				$_MESSAGE .= '<p>This is a courtesy email to inform you that a Fincon Sales Order failed to be created for Order #'.$_ID.' on your website <strong>'.get_bloginfo('name').'</strong>.</p>';
+
+			break;
+
+		endswitch;
+
+		if($_HAS_ERRORS && strlen($_ERROR_TEXT) > 0):
+			$_MESSAGE .= $_ERROR_TEXT;
+		endif;
+
+		$_MESSAGE .= '<p>The log file for today is attached. You can also view it on your Fincon status page.</p>';
+
 		$_MESSAGE .= '<p>Fincon Accounting.</p>';
+
 
 		$_HEADERS = array('Content-Type: text/html; charset=UTF-8');
 
-		wp_mail($_SEND_TO, $_SUBJECT, $_MESSAGE, $_HEADERS);
+		wp_mail($_SEND_TO, $_SUBJECT, $_MESSAGE, $_HEADERS, $_ATTACHMENTS);
 
+	}
+
+	/**
+	 * Admin hook for custom pages
+	 *
+	 * @since    1.2.0
+	 */
+	public function admin_menu(){
+
+		add_submenu_page( 'woocommerce', 'Fincon Status', 'Fincon Status', 'manage_woocommerce', 'fincon-status', array($this, 'admin_menu_stats_display'));
+
+	}
+
+	/**
+	 * Status page
+	 *
+	 * @since    1.2.0
+	 */
+	public function admin_menu_stats_display(){
+
+    	$_FILES = WC_Fincon_Logger::fetch();
+
+		$_ARRAY_OF_FINCON_VARIABLES = array(
+			'fincon_woocommerce_active' => get_option('fincon_woocommerce_active'),
+			'fincon_woocommerce_admin_message_text' => get_option('fincon_woocommerce_admin_message_text'),
+			'fincon_woocommerce_admin_message_type' => get_option('fincon_woocommerce_admin_message_type'),
+			'fincon_woocommerce_admin_message_date' => get_option('fincon_woocommerce_admin_message_date'),
+			'fincon_woocommerce_do_inital_product_sync' => get_option('fincon_woocommerce_do_inital_product_sync'),
+			'fincon_woocommerce_do_inital_product_sync_date' => get_option('fincon_woocommerce_do_inital_product_sync_date'),
+			'fincon_woocommerce_do_inital_user_sync' => get_option('fincon_woocommerce_do_inital_user_sync'),
+			'fincon_woocommerce_do_inital_user_sync_date' => get_option('fincon_woocommerce_do_inital_user_sync_date'),
+			'fincon_woocommerce_product_sync_running' => get_option('fincon_woocommerce_product_sync_running'),
+			'fincon_woocommerce_last_product_update' => get_option('fincon_woocommerce_last_product_update'),
+			'fincon_woocommerce_user_sync_running' => get_option('fincon_woocommerce_user_sync_running'),
+			'fincon_woocommerce_last_user_update' => get_option('fincon_woocommerce_last_user_update')
+		);
+		extract($_ARRAY_OF_FINCON_VARIABLES);
+
+
+		$_CRON_URL = FINCON_WOOCOMMERCE_CRON_BASE;
+
+		?>
+		<div class="wrap fincon-status-page">
+
+       	<h1>Fincon Status</h1>
+		<div id="FC30SECONDS" class="fincon-admin-info-block"><small><em>This page will refresh every 30 seconds</em></small></div>
+    	<div class="fincon-admin-status-block">
+    		<h2>Fincon Status</h2>
+
+    		<div class="fincon-admin-status-item">
+    			<span>Is Fincon Activated:</span> 
+				<?php if($fincon_woocommerce_active == 'yes'): ?>
+					<strong class="fincon-admin-success">Yes</strong>
+				<?php else: ?>
+					<strong class="fincon-admin-failure">No</strong>
+				<?php endif; ?>
+    		</div>
+			
+			<?php if($fincon_woocommerce_admin_message_text != ''): ?>
+	    		<div class="fincon-admin-status-item">
+	    			<span>Fincon Connection Text:</span> 
+	    			<strong class="<?php echo $fincon_woocommerce_admin_message_type; ?>"><?php echo $fincon_woocommerce_admin_message_text; ?></strong>
+	    		</div>
+    		<?php endif; ?>
+
+    		<?php if($fincon_woocommerce_admin_message_date): ?>
+				<div class="fincon-admin-status-item">
+	    			<span>Last Connection Check:</span> <strong><?php echo $fincon_woocommerce_admin_message_date; ?></strong>
+	    		</div>
+    		<?php endif; ?>
+
+	    	<?php if(wp_next_scheduled('fincon_woocommerce_check_status')): ?>
+				<div class="fincon-admin-status-item">
+	    			<span>Next Connection Check:</span> <strong><?php echo wp_date('Y/m/d H:i:s', wp_next_scheduled('fincon_woocommerce_check_status')); ?></strong>
+	    		</div>
+	    	<?php endif; ?>
+
+
+
+    	</div>
+
+    	<div class="fincon-admin-status-block">
+    		<h2>Sync Status</h2>
+
+    		<h4>Initial Syncs</h4>
+
+    		<div class="fincon-admin-status-item">
+    			<span>Did Initial Product Sync Run:</span> 
+				<?php if($fincon_woocommerce_do_inital_product_sync == 'yes'): ?>
+					<strong class="fincon-admin-success">Yes</strong>
+				<?php else: ?>
+					<strong class="fincon-admin-failure">No</strong>
+				<?php endif; ?>
+    		</div>
+    		<?php if($fincon_woocommerce_do_inital_product_sync_date): ?>
+	    		<div class="fincon-admin-status-item">
+	    			<span>Initial Product Sync:</span> <strong><?php echo $fincon_woocommerce_do_inital_product_sync_date; ?></strong>
+	    		</div>
+	    	<?php endif; ?>
+
+    		<div class="fincon-admin-status-item">
+    			<span>Did Initial User Sync Run:</span>
+				<?php if($fincon_woocommerce_do_inital_user_sync == 'yes'): ?>
+					<strong class="fincon-admin-success">Yes</strong>
+				<?php else: ?>
+					<strong class="fincon-admin-failure">No</strong>
+				<?php endif; ?>
+    		</div>
+    		<?php if($fincon_woocommerce_do_inital_user_sync_date): ?>
+	    		<div class="fincon-admin-status-item">
+	    			<span>Initial User Sync:</span> <strong><?php echo $fincon_woocommerce_do_inital_user_sync_date; ?></strong>
+	    		</div>
+	    	<?php endif; ?>
+
+    		<h4>Product Syncs</h4>
+
+    		<div class="fincon-admin-status-item">
+    			<span>Is a Product Sync Running:</span>
+    			<?php if($fincon_woocommerce_product_sync_running == 'yes'): ?>
+					<strong class="fincon-admin-success">Yes</strong>
+				<?php else: ?>
+					<strong class="fincon-admin-failure">No</strong>
+				<?php endif; ?>
+    		</div>
+
+			<?php if($fincon_woocommerce_product_sync_running == 'yes'): ?>
+				<div class="fincon-admin-status-item">
+	    			<span>Last Product Sync:</span> <strong class="fincon-admin-success">In Progress</strong>
+	    		</div>
+    		<?php elseif($fincon_woocommerce_last_product_update): ?>
+	    		<div class="fincon-admin-status-item">
+	    			<span>Last Product Sync:</span> <strong><?php echo $fincon_woocommerce_last_product_update; ?></strong>
+	    		</div>
+	    	<?php endif; ?>
+
+	    	<?php if(wp_next_scheduled('fincon_woocommerce_sync_products')): ?>
+				<div class="fincon-admin-status-item">
+	    			<span>Next Product Sync:</span> <strong><?php echo wp_date('Y/m/d H:i:s', wp_next_scheduled('fincon_woocommerce_sync_products')); ?></strong>
+	    		</div>
+	    	<?php endif; ?>
+
+    		<h4>User Syncs</h4>
+
+    		<div class="fincon-admin-status-item">
+    			<span>Is a User Sync Running:</span>
+    			<?php if($fincon_woocommerce_user_sync_running == 'yes'): ?>
+					<strong class="fincon-admin-success">Yes</strong>
+				<?php else: ?>
+					<strong class="fincon-admin-failure">No</strong>
+				<?php endif; ?>
+    		</div>
+
+    		<?php if($fincon_woocommerce_user_sync_running == 'yes'): ?>
+				<div class="fincon-admin-status-item">
+	    			<span>Last Product Sync:</span> <strong class="fincon-admin-success">In Progress</strong>
+	    		</div>
+    		<?php elseif($fincon_woocommerce_last_user_update): ?>
+	    		<div class="fincon-admin-status-item">
+	    			<span>Last User Sync:</span> <strong><?php echo $fincon_woocommerce_last_user_update; ?></strong>
+	    		</div>
+	    	<?php endif; ?>
+
+	    	<?php if(wp_next_scheduled('fincon_woocommerce_sync_accounts')): ?>
+				<div class="fincon-admin-status-item">
+	    			<span>Next User Sync:</span> <strong><?php echo wp_date('Y/m/d H:i:s', wp_next_scheduled('fincon_woocommerce_sync_accounts')); ?></strong>
+	    		</div>
+	    	<?php endif; ?>
+
+
+    	</div>
+
+
+
+    	<div class="fincon-admin-status-block">
+    		<h2>WP Cron Status</h2>
+
+    		<div class="fincon-admin-status-item">
+    			<span>Is WP CRON enabled:</span>
+    			<?php if(defined('DISABLE_WP_CRON')): ?>
+					<?php if(DISABLE_WP_CRON == true || DISABLE_WP_CRON == 1 || DISABLE_WP_CRON == "true"): ?>
+					<strong class="fincon-admin-success">No</strong>
+					<?php else: ?>
+					<strong class="fincon-admin-success">Yes</strong>
+					<?php endif; ?>
+    			<?php else: ?>
+					<strong class="fincon-admin-success">Yes</strong>
+    			<?php endif; ?>
+    		</div>
+			
+
+    		<h2>External Crons</h2>
+    		<div class="fincon-admin-status-item">
+    			<span>Sync Connection: </span><br/><strong><?php echo $_CRON_URL; ?>?type=connection</strong>
+    		</div>
+    		<div class="fincon-admin-status-item">
+    			<span>Sync Products: </span><br/><strong> <?php echo $_CRON_URL; ?>?type=stock</strong>
+    		</div>
+    		<div class="fincon-admin-status-item">
+    			<span>Sync Users: </span><br/><strong> <?php echo $_CRON_URL; ?>?type=users</strong>
+    		</div>
+    		<div class="fincon-admin-status-item">
+    			<span>Clean Logs: </span><br/><strong> <?php echo $_CRON_URL; ?>?type=logs</strong>
+    		</div>
+    		<div class="fincon-admin-status-item">
+    			<span>Run All: </span><br/><strong> <?php echo $_CRON_URL; ?>?type=all</strong>
+    		</div>
+
+
+    	</div>
+
+    	<?php if(is_array($_FILES) && count($_FILES) > 0): ?>
+
+    	<div class="fincon-admin-status-block">
+    		<h2>Logs</h2>
+
+    		<?php foreach($_FILES as $_FILE): ?>
+			
+				<div class="fincon-admin-status-item">
+	    			<a target="_blank" href="<?php WC_Fincon_Logger::link($_FILE); ?>"><?php echo $_FILE; ?></a>
+	    		</div>
+
+    		<?php endforeach; ?>
+
+    	</div>
+
+    	<?php endif; ?>
+
+    	<div class="fincon-admin-trigger-block">
+    		<a class="fincon-admin-trigger" data-trigger="fincon_admin_trigger_product_sync"><span class="dashicons dashicons-cart"></span> Trigger Product Sync</a> | <a class="fincon-admin-trigger" data-trigger="fincon_admin_trigger_user_sync"><span class="dashicons dashicons-admin-users"></span> Trigger User Sync</a> | <a class="fincon-admin-trigger" data-trigger="fincon_admin_trigger_connection_sync"><span class="dashicons dashicons-admin-tools"></span> Trigger Connection Sync</a>
+    	</div>
+        </div>
+
+        <?php
 	}
 
 	/**
@@ -532,32 +878,44 @@ class Fincon_Woocommerce_Admin {
 
 		if(!get_option('fincon_woocommerce_product_sync_running') || get_option('fincon_woocommerce_product_sync_running') == 'no'):
 
+			WC_Fincon_Logger::log('Product Sync Started');
+
 			set_time_limit(0);
 
 			update_option('fincon_woocommerce_product_sync_running', 'yes');
 
 			$_LAST_UPDATE = get_option('fincon_woocommerce_last_product_update');
 
-			$_FINCON = new fincon();
+			$_FINCON = new WC_Fincon();
 
 			$_FINCON->LogIn();
+
+			$_COUNT = 0;
 
 			if($_LAST_UPDATE):
 
 				$_DATE_TO_WORK_WITH = self::dateTimeToDouble($_LAST_UPDATE);
 
-				self::fincon_product_sync_partial($_FINCON, $_DATE_TO_WORK_WITH);
+				$_COUNT = self::fincon_product_sync_partial($_FINCON, $_DATE_TO_WORK_WITH);
 
 			else:
 
-				self::fincon_product_sync_full($_FINCON);
+				$_COUNT = self::fincon_product_sync_full($_FINCON);
 
 			endif;
 
 
 			$_FINCON->LogOut();
-			update_option('fincon_woocommerce_last_product_update', date_i18n('Y/m/d H:i:s'));
+
 			update_option('fincon_woocommerce_product_sync_running', 'no');
+			
+			update_option('fincon_woocommerce_last_product_update', wp_date('Y/m/d H:i:s'));
+
+			WC_Fincon_Logger::log('Product Sync Ended');
+			
+			if(get_option('fincon_woocommerce_enable_product_email') == 'yes' && $_COUNT > 0):
+				$this->do_email_notification('products', $_FINCON->_ERRORS);
+			endif;
 
 		endif;
 
@@ -573,6 +931,8 @@ class Fincon_Woocommerce_Admin {
 	public static function sync_user_items(){		
 		
 		if(!get_option('fincon_woocommerce_user_sync_running') || get_option('fincon_woocommerce_user_sync_running') == 'no'):
+
+			WC_Fincon_Logger::log('User Sync Started');
 			
 			set_time_limit(0);
 
@@ -580,30 +940,34 @@ class Fincon_Woocommerce_Admin {
 
 			$_LAST_UPDATE = get_option('fincon_woocommerce_last_user_update');
 
-			$_FINCON = new fincon();
+			$_FINCON = new WC_Fincon();
 
 			$_FINCON->LogIn();
+
+			$_COUNT = 0;
 
 			if($_LAST_UPDATE):
 
 				$_DATE_TO_WORK_WITH = self::dateTimeToDouble($_LAST_UPDATE);
 
-				echo 'GOING INTO UPDATE';
-
-				self::fincon_user_sync_partial($_FINCON, $_DATE_TO_WORK_WITH);
+				$_COUNT = self::fincon_user_sync_partial($_FINCON, $_DATE_TO_WORK_WITH);
 
 			else:
 
-				echo 'GOING INTO FULL';
-
-				self::fincon_user_sync_full($_FINCON);
+				$_COUNT = self::fincon_user_sync_full($_FINCON);
 
 			endif;
 
 			$_FINCON->LogOut();
+			update_option('fincon_woocommerce_last_user_update', wp_date('Y/m/d H:i:s'));
 
-			update_option('fincon_woocommerce_last_user_update', date_i18n('Y/m/d H:i:s'));
 			update_option('fincon_woocommerce_user_sync_running', 'no');
+
+			WC_Fincon_Logger::log('User Sync Ended');
+			
+			if(get_option('fincon_woocommerce_enable_user_email') == 'yes' && $_COUNT > 0):
+				$this->do_email_notification('users', $_FINCON->_ERRORS);
+			endif;
 
 		endif;
 
@@ -616,7 +980,9 @@ class Fincon_Woocommerce_Admin {
 	 *
 	 * @since    1.0.0
 	 */
-	public static function fincon_product_sync_full($_FINCON ){
+	public static function fincon_product_sync_full(&$_FINCON ){
+
+		$_COUNT = 0;
 
 		$_EOF = false;
 
@@ -625,7 +991,7 @@ class Fincon_Woocommerce_Admin {
 
 		if(!$_EOF):
 
-			self::insert_update_product($_FIRST, $_FINCON->_LOC, $_FINCON->_EXCLUDE);
+			$_COUNT += self::insert_update_product($_FIRST, $_FINCON);
 
 		endif;
 
@@ -633,12 +999,14 @@ class Fincon_Woocommerce_Admin {
 
 			$_STOCK = $_FINCON->GetStockNext($_EOF);
 
-			self::insert_update_product($_STOCK, $_FINCON->_LOC, $_FINCON->_EXCLUDE);
+			$_COUNT += self::insert_update_product($_STOCK, $_FINCON);
 
 			$_EOF = $_STOCK['Eof'];
 
 
 		endwhile;
+
+		return $_COUNT;
 
 
 
@@ -649,23 +1017,33 @@ class Fincon_Woocommerce_Admin {
 	 *
 	 * @since    1.0.0
 	 */
-	public static function fincon_product_sync_partial($_FINCON, $_DATE_TO_WORK_WITH){
+	public static function fincon_product_sync_partial(&$_FINCON, $_DATE_TO_WORK_WITH){
+
+		$_COUNT = 0;
 		
 		$_DATA = $_FINCON->GetStockChanged($_DATE_TO_WORK_WITH);
 
 		$_LIST = $_DATA['StockList'];
 
-		if(is_array($_LIST)):
+		if(is_array($_LIST) && count($_LIST) > 0):
+
 			foreach($_LIST as $_ITEM):
 
 				$_SKU = $_ITEM->ItemNo;
 
 				$_FDATA = $_FINCON->GetStockItem($_SKU, true);
 
-				self::insert_update_product($_FDATA, $_FINCON->_LOC, $_FINCON->_EXCLUDE);
+				$_COUNT += self::insert_update_product($_FDATA, $_FINCON);
 
 			endforeach;
+
+		else:
+
+			WC_Fincon_Logger::log('Product Sync: no products changes to sync ('.$_DATE_TO_WORK_WITH.')');
+
 		endif;
+
+		return $_COUNT;
 
 
 	}
@@ -675,7 +1053,10 @@ class Fincon_Woocommerce_Admin {
 	 *
 	 * @since    1.0.0
 	 */
-	public static function insert_update_product($_STOCK, $_FLOC, $_FEXCLUDE){
+	public static function insert_update_product($_STOCK, &$_FINCON){
+
+		$_FLOC 		= $_FINCON->_LOC;
+		$_FEXCLUDE 	= $_FINCON->_EXCLUDE;
 
 		$_DATA 		= $_STOCK['StockBuf'];
 
@@ -690,14 +1071,16 @@ class Fincon_Woocommerce_Admin {
 
 			$_CATS = array();
 
+			$_ATTS = array();
+
 			$_CAT_ID  	= self::get_category_id($_DATA->Category,$_DATA->CatDescription);
 			if($_CAT_ID):
 				$_CATS[] = $_CAT_ID;
 			endif;
 
-			$_BRAND_ID 	= self::get_category_id($_DATA->Brand,$_DATA->BrandDescription, 'pa_brand');
+			$_BRAND_ID 	= self::get_category_id($_DATA->Brand,$_DATA->BrandDescription);
 			if($_BRAND_ID):
-				//$_CATS[] = $_BRAND_ID;
+				$_CATS[] = $_BRAND_ID;
 			endif;
 
 			$_GROUP_ID 	= self::get_category_id($_DATA->Group,$_DATA->GroupDescription);
@@ -722,6 +1105,8 @@ class Fincon_Woocommerce_Admin {
 				$_PROD->set_sku($_SKU);
 
 				$_NEW = true;
+
+				
 
 			endif;
 
@@ -780,10 +1165,78 @@ class Fincon_Woocommerce_Admin {
 			
 			$_PROD->save();
 
+			$_ID = $_PROD->get_id();
 
-			echo $_SKU.' -- '.$_DATA->Description.'<br/>';
+			if((int)$_ID > 0):
+
+				if($_NEW):
+
+					WC_Fincon_Logger::log('Product ('.$_SKU.'): Insert');
+
+				return 1;
+
+				else:
+
+					WC_Fincon_Logger::log('Product ('.$_SKU.'): Updated');
+
+				return 1;
+
+				endif;
+			
+
+			else:
+
+
+				if($_NEW):
+
+					$_FINCON->_ERRORS[] = 'Product ('.$_SKU.'): Insert Failed';
+					WC_Fincon_Logger::log('Product ('.$_SKU.'): Insert Failed');
+
+					return 0;
+
+				else:
+
+					$_FINCON->_ERRORS[] = 'Product ('.$_SKU.'): Update Failed';
+					WC_Fincon_Logger::log('Product ('.$_SKU.'): Updated Failed');
+
+					return 0;
+
+				endif;
+				
+
+			endif;
+
+		else:
+
+			$_SKU 		= $_DATA->ItemNo;
+			$_ID 		= wc_get_product_id_by_sku($_SKU);
+
+			if ($_ID !== 0):
+
+				$_DELETE = wc_get_product($_ID);
+                $_DELETE->delete();
+
+                if('trash' === $_DELETE->get_status()):
+                	wc_delete_product_transients($_ID);
+                	WC_Fincon_Logger::log('Product ('.$_SKU.'): Deleted');
+                	return 1;
+                else:
+                	WC_Fincon_Logger::log('Product ('.$_SKU.'): Deleted Failed');
+                	return 0;
+                endif;
+
+			else:
+
+				return 0;
+
+			endif;	
+
+
 
 		endif;
+
+
+		return 0;
 
 
 
@@ -794,17 +1247,17 @@ class Fincon_Woocommerce_Admin {
 	 *
 	 * @since    1.0.0
 	 */
-	public static function fincon_user_sync_full($_FINCON){
+	public static function fincon_user_sync_full(&$_FINCON){
+
+		$_COUNT = 0;
 
 		$_FIRST = $_FINCON->GetDebAccountFirst();
 
-		$_EOF = $_FIRST['Eof'];
-
-		
+		$_EOF = $_FIRST['Eof'];		
 
 		if(!$_EOF):
 
-			self::insert_update_user($_FIRST);
+			$_COUNT += self::insert_update_user($_FIRST, $_FINCON);
 
 		endif;
 
@@ -812,12 +1265,13 @@ class Fincon_Woocommerce_Admin {
 
 			$_USER = $_FINCON->GetDebAccountNext($_EOF);
 
-			self::insert_update_user($_USER);
+			$_COUNT += self::insert_update_user($_USER, $_FINCON);
 
 			$_EOF = $_USER['Eof'];
 
-
 		endwhile;
+
+		return $_COUNT;
 
 		
 
@@ -828,22 +1282,32 @@ class Fincon_Woocommerce_Admin {
 	 *
 	 * @since    1.0.0
 	 */
-	public static function fincon_user_sync_partial($_FINCON, $_DATE_TO_WORK_WITH){
+	public static function fincon_user_sync_partial(&$_FINCON, $_DATE_TO_WORK_WITH){
+
+		$_COUNT = 0;
 		
 		$_DATA = $_FINCON->GetAccountsChanged($_DATE_TO_WORK_WITH);
 		$_LIST = $_DATA['AccountList'];
-		if(is_array($_LIST)):
+
+		if(is_array($_LIST) && count($_LIST) > 0):
+
 			foreach($_LIST as $_ITEM):
 
 				$_ACC_NO = $_ITEM->AccNo;
 
 				$_FDATA = $_FINCON->GetDebAccount($_ACC_NO);
 
-				self::insert_update_user($_FDATA, $_FINCON->_LOC, $_FINCON->_EXCLUDE);
+				$_COUNT += self::insert_update_user($_FDATA, $_FINCON);
 
 			endforeach;
 
+		else:
+
+			WC_Fincon_Logger::log('User Sync: no user changes to sync ('.$_DATE_TO_WORK_WITH.')');
+
 		endif;
+
+		return $_COUNT;
 
 
 	}
@@ -853,43 +1317,151 @@ class Fincon_Woocommerce_Admin {
 	 *
 	 * @since    1.0.0
 	 */
-	public static function insert_update_user($_USER){
+	public static function insert_update_user($_USER, &$_FINCON){
 
 		$_ACC = $_USER['AccountBuf'];
 
 		if ($_ACC->WebList == 'Y' && $_ACC->Active == 'Y'):
 
-			$_ID = username_exists($_ACC->AccNo);
+			$_DO_INSERT = true;
 
-			if($_ID == 0):
+			if(!validate_username($_ACC->AccNo)):
 
-				$_ID = wp_create_user($_ACC->AccNo, $_ACC->EMail, $_ACC->Password);
-				$_USER = new WP_User($_ID);
-				$_USER->set_role('customer');
+				WC_Fincon_Logger::log('User ('.$_ACC->AccNo.') Insert Failed: Invalid Username.');
+				$_FINCON->_ERRORS[] = 'User ('.$_ACC->AccNo.') Insert Failed: Invalid Username.';
+				$_DO_INSERT = false;
+				
+			else:
+
+				$_ID = username_exists($_ACC->AccNo);
+
+				if($_ID == 0):
+
+					$_ID = wp_create_user($_ACC->AccNo, $_ACC->EMail, $_ACC->Password);
+
+					if(is_wp_error($_ID)):
+
+						$_DO_INSERT = false;
+
+						WC_Fincon_Logger::log('User ('.$_ACC->AccNo.') Insert Failed: '.$_ID->get_error_message());
+
+						$_FINCON->_ERRORS[] = 'User ('.$_ACC->AccNo.') Insert Failed: '.$_ID->get_error_message();
+
+					else:
+
+						$_USER = new WP_User($_ID);
+						$_USER->set_role('customer');
+
+						WC_Fincon_Logger::log('User ('.$_ACC->AccNo.'): Insert');
+
+					endif;				
+
+				else:
+
+					WC_Fincon_Logger::log('User ('.$_ACC->AccNo.'): Update');
+
+				endif;
 
 			endif;
 
-			update_user_meta( $_ID, "billing_company", $_ACC->DebName);
-			update_user_meta( $_ID, "billing_address_1", $_ACC->Addr1);
-			update_user_meta( $_ID, "billing_address_2", $_ACC->Addr2);
-			update_user_meta( $_ID, "billing_city", $_ACC->Addr3);
-			update_user_meta( $_ID, "billing_postcode", $_ACC->PCode);
-			update_user_meta( $_ID, "billing_country", 'ZA' );
-			update_user_meta( $_ID, "billing_state", '' );
-			update_user_meta( $_ID, "billing_email", $_ACC->StatementMail);
-			update_user_meta( $_ID, "billing_phone", $_ACC->TelNo);
+			if($_DO_INSERT):
 
-			update_user_meta( $_ID, "shipping_first_name",$_ACC->DelName);
-			update_user_meta( $_ID, "shipping_last_name", '' );
-			update_user_meta( $_ID, "shipping_company", $_ACC->DebName );
-			update_user_meta( $_ID, "shipping_address_1", $_ACC->DelAddr1 );
-			update_user_meta( $_ID, "shipping_address_2", $_ACC->DelAddr2 );
-			update_user_meta( $_ID, "shipping_city", $_ACC->DelAddr3 );
-			update_user_meta( $_ID, "shipping_postcode", $_ACC->DelPCode );
-			update_user_meta( $_ID, "shipping_country", 'ZA' );
-			update_user_meta( $_ID, "shipping_state", $_ACC->DelAddr4 );
+				update_user_meta( $_ID, "billing_company", $_ACC->DebName);
+				update_user_meta( $_ID, "billing_address_1", $_ACC->Addr1);
+				update_user_meta( $_ID, "billing_address_2", $_ACC->Addr2);
+				update_user_meta( $_ID, "billing_city", $_ACC->Addr3);
+				update_user_meta( $_ID, "billing_postcode", $_ACC->PCode);
+				update_user_meta( $_ID, "billing_country", 'ZA' );
+				update_user_meta( $_ID, "billing_state", '' );
+				update_user_meta( $_ID, "billing_email", $_ACC->StatementMail);
+				update_user_meta( $_ID, "billing_phone", $_ACC->TelNo);
+
+				update_user_meta( $_ID, "shipping_first_name",$_ACC->DelName);
+				update_user_meta( $_ID, "shipping_last_name", '' );
+				update_user_meta( $_ID, "shipping_company", $_ACC->DebName );
+				update_user_meta( $_ID, "shipping_address_1", $_ACC->DelAddr1 );
+				update_user_meta( $_ID, "shipping_address_2", $_ACC->DelAddr2 );
+				update_user_meta( $_ID, "shipping_city", $_ACC->DelAddr3 );
+				update_user_meta( $_ID, "shipping_postcode", $_ACC->DelPCode );
+				update_user_meta( $_ID, "shipping_country", 'ZA' );
+				update_user_meta( $_ID, "shipping_state", $_ACC->DelAddr4 );
+
+				return 1;
+
+			else:
+
+				return 0;
+
+			endif;
+
+		else:
+
+			if($_ID > 0):
+				wp_delete_user($_ID);
+				WC_Fincon_Logger::log('User ('.$_ACC->AccNo.'): Deleted');
+				return 1;
+			else:
+
+				return 0;
+
+			endif;
 
 		endif;
 	}
+
+	/**
+	 * AJAX Function to run a product sync
+	 *
+	 * @since    1.2.0
+	 */
+	public static function fincon_admin_trigger_product_sync(){
+
+		if(!get_option('fincon_woocommerce_product_sync_running') || get_option('fincon_woocommerce_product_sync_running') == 'no'):
+
+			wp_schedule_single_event(time(), 'fincon_woocommerce_sync_products');
+
+		endif;
+
+		echo 'yes';
+
+		exit;
+
+	}
+
+	/**
+	 * AJAX Function to run a user sync
+	 *
+	 * @since    1.2.0
+	 */
+	public static function fincon_admin_trigger_user_sync(){
+
+		if(!get_option('fincon_woocommerce_user_sync_running') || get_option('fincon_woocommerce_user_sync_running') == 'no'):
+
+			wp_schedule_single_event(time(), 'fincon_woocommerce_sync_accounts');
+
+		endif;
+
+		echo 'yes';
+
+		exit;
+	}
+
+	/**
+	 * AJAX Function to check the FINCON connection
+	 *
+	 * @since    1.2.0
+	 */
+	public static function fincon_admin_trigger_connection_sync(){
+
+		$this->check_api();
+
+		echo 'yes';
+
+		exit;
+	}
+
+
+
+
 
 }

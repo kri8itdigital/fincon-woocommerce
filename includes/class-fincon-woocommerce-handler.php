@@ -2,7 +2,7 @@
 
 
 
-class fincon{
+class WC_Fincon{
 
 	var $_ID = 0;
 	var $_URL = '';
@@ -97,6 +97,8 @@ class fincon{
 			update_option('fincon_woocommerce_admin_message_type', 'notice-error');
 
 			update_option('fincon_woocommerce_active', 'no');
+
+			WC_Fincon_Logger::log('Fincon FATAL Error: '.$e->getMessage());
 		}
 
 	}
@@ -115,9 +117,23 @@ class fincon{
 	 */
 	public function Validate(){
 
+		WC_Fincon_Logger::log('Connection Sync Running');
+
 		$_LOGIN = $this->_SOAP->LogIn($this->_D, $this->_UN, $this->_PW, $this->_ID, $this->_ERR, $this->_EXT);
 		
 		$this->LogOut();
+
+		if($_LOGIN['return']):
+			WC_Fincon_Logger::log('Connection Sync Succeeded');
+		else:
+			if(isset($_LOGIN['ErrorString'])):
+				WC_Fincon_Logger::log('Connection Sync Failed: '.$_LOGIN['ErrorString']);
+			else:
+				WC_Fincon_Logger::log('Connection Sync Failed: Check Credentials');
+			endif;
+		endif;
+
+		WC_Fincon_Logger::log('Connection Sync Ended');
 
 		return $_LOGIN;
 
@@ -137,6 +153,8 @@ class fincon{
 	 */
 	public static function ValidateCustom($URL, $UN, $PW, $DATA, $EXT){
 
+		WC_Fincon_Logger::log('Settings Connection Sync Running');
+
 		$_TEST_SOAP = new SoapClient($URL); 
 
 		$_KILL = $_TEST_SOAP->KillUsers('0.0');
@@ -144,6 +162,18 @@ class fincon{
 		$_LOGIN = $_TEST_SOAP->LogIn($DATA, $UN, $PW, 0, '', $EXT);
 		
 		$_TEST_SOAP->LogOut($_LOGIN['ConnectID'], '');
+
+		if($_LOGIN['return']):
+			WC_Fincon_Logger::log('Settings Connection Sync Succeeded');
+		else:
+			if(isset($_LOGIN['ErrorString'])):
+				WC_Fincon_Logger::log('Settings Connection Sync Failed: '.$_LOGIN['ErrorString']);
+			else:
+				WC_Fincon_Logger::log('Settings Connection Sync Failed: Check Credentials');
+			endif;
+		endif;
+
+		WC_Fincon_Logger::log('Settings Connection Sync Ended');
 
 		return $_LOGIN;
 
@@ -162,7 +192,6 @@ class fincon{
 	HELPER - LOGIN
 	 */
 	public function LogIn(){
-
 		
 
 		$_LOGIN = $this->_SOAP->LogIn($this->_D, $this->_UN, $this->_PW, $this->_ID, $this->_ERR, $this->_EXT);
@@ -170,7 +199,16 @@ class fincon{
 		if($_LOGIN['return']):
 			$this->_ID = $_LOGIN['ConnectID'];		
 		else:
-			$this->_ERRORS[] = 'Could not login. Check Credentials.';
+
+			if($_LOGIN['ErrorString'] != ""):
+				$this->_ERRORS[] = 'Could not login: '.$_LOGIN['ErrorString'];
+				WC_Fincon_Logger::log('Connection Login Failed: '.$_LOGIN['ErrorString']);
+			else:
+				$this->_ERRORS[] = 'Could not login. Check Credentials.';
+				WC_Fincon_Logger::log('Connection Login Failed: Check Credentials.');
+			endif;
+
+			
 		endif;
 
 	}
@@ -248,9 +286,17 @@ class fincon{
 		else:
 			
 			if($_RETURN['ErrorString'] != ""):
+
 				$this->_ERRORS[] = $_RETURN['ErrorString'];
+
+				WC_Fincon_Logger::log('API GetDebAccount ('.$_ACC_TO_USE.') Error: '.$_RETURN['ErrorString']);
+
 			else:
+
 				$this->_ERRORS[] = 'Account '.$_ACC_TO_USE.' not found on Fincon.';
+
+				WC_Fincon_Logger::log('API GetDebAccount ('.$_ACC_TO_USE.') Error: not found');
+
 			endif;
 			
 			return false;
@@ -284,9 +330,16 @@ class fincon{
 		else:
 			
 			if($_RETURN['ErrorString'] != ""):
+
 				$this->_ERRORS[] = $_RETURN['ErrorString'];
+
+				WC_Fincon_Logger::log('API GetDebAccountFirst Error: '.$_RETURN['ErrorString']);
 			else:
+
 				$this->_ERRORS[] = 'Could not load first Deb Account.';
+
+				WC_Fincon_Logger::log('API GetDebAccountFirst Error: Could not load first Deb Account.');
+
 			endif;
 			
 			return false;
@@ -319,6 +372,8 @@ class fincon{
 		else:
 			
 			$this->_ERRORS[] = $_RETURN['ErrorString'];
+
+			WC_Fincon_Logger::log('API GetDebAccountNext Error: '.$_RETURN['ErrorString']);
 						
 			return false;
 
@@ -352,6 +407,8 @@ class fincon{
 		else:
 			
 			$this->_ERRORS[] = $_RETURN['ErrorString'];
+
+			WC_Fincon_Logger::log('API GetAccountsChanged Error: '.$_RETURN['ErrorString']);
 						
 			return false;
 			
@@ -388,9 +445,17 @@ class fincon{
 		else:
 			
 			if($_RETURN['ErrorString'] != ""):
+
 				$this->_ERRORS[] = $_RETURN['ErrorString'];
+
+				WC_Fincon_Logger::log('API UpdateDebAccount ('.$_DACC.') Error: '.$_RETURN['ErrorString']);
+
 			else:
+
 				$this->_ERRORS[] = 'Account '.$_DACC.' could not be updated.';
+
+				WC_Fincon_Logger::log('API UpdateDebAccount ('.$_DACC.') Error: Account count not be updated.');
+
 			endif;
 			
 			return false;
@@ -429,9 +494,17 @@ class fincon{
 		else:
 			
 			if($_RETURN['ErrorString'] != ""):
+
 				$this->_ERRORS[] = $_RETURN['ErrorString'];
+
+				WC_Fincon_Logger::log('API GetStockItem ('.$_SKU.') Error: ').$_RETURN['ErrorString'];
+
 			else:
+
 				$this->_ERRORS[] = 'Item '.$_SKU.' not found on Fincon.';
+
+				WC_Fincon_Logger::log('API GetStockItem ('.$_SKU.') Error: not found on Fincon.');
+
 			endif;
 			
 			return false;
@@ -465,6 +538,8 @@ class fincon{
 		else:
 				
 			$this->_ERRORS[] = $_RETURN['ErrorString'];
+
+			WC_Fincon_Logger::log('API GetStockFirst Error: '.$_RETURN['ErrorString']);
 			
 			return false;
 
@@ -498,6 +573,8 @@ class fincon{
 		else:
 			
 			$this->_ERRORS[] = $_RETURN['ErrorString'];
+
+			WC_Fincon_Logger::log('API GetStockNext Error: '.$_RETURN['ErrorString']);
 			
 			return false;
 
@@ -533,6 +610,8 @@ class fincon{
 			
 			if($_RETURN['ErrorString'] != ""):
 				$this->_ERRORS[] = $_RETURN['ErrorString'];
+
+				WC_Fincon_Logger::log('API GetStockChanged Error: '.$_RETURN['ErrorString']);
 			endif;
 			
 			return false;
@@ -579,9 +658,16 @@ class fincon{
 		else:
 			
 			if($_RETURN['ErrorString'] != ""):
+
 				$this->_ERRORS[] = $_RETURN['ErrorString'];
+
+				WC_Fincon_Logger::log('API GetStockItemQTY ('.$_SKU.') Error: '.$_RETURN['ErrorString']);
 			else:
+
 				$this->_ERRORS[] = 'Could not retrieve stock for Item '.$_SKU.' in Location '.$this->_LOC;
+
+				WC_Fincon_Logger::log('API GetStockItemQTY ('.$_SKU.') Error: Could not retrieve stock in Location '.$this->_LOC);
+
 			endif;
 			
 			return false;
@@ -629,9 +715,17 @@ class fincon{
 		else:
 			
 			if($_RETURN['ErrorString'] != ""):
+
 				$this->_ERRORS[] = $_RETURN['ErrorString'];
+
+				WC_Fincon_Logger::log('API GetShipping ('.$this->_SHIP.') Error: '.$_RETURN['ErrorString']);
+
 			else:
+
 				$this->_ERRORS[] = 'Could not find Shipping item '.$this->_SHIP.' on Fincon.';
+
+				WC_Fincon_Logger::log('API GetShipping ('.$this->_SHIP.') Error: Could not find Shipping item on Fincon.');
+
 			endif;
 			
 			return false;
@@ -682,9 +776,17 @@ class fincon{
 		else:
 			
 			if($_RETURN['ErrorString'] != ""):
+
 				$this->_ERRORS[] = $_RETURN['ErrorString'];
+
+				WC_Fincon_Logger::log('API GetCoupon ('.$this->_COUPON.') Error: '.$_RETURN['ErrorString']);
+
 			else:
+
 				$this->_ERRORS[] = 'Could not find Coupon item '.$this->_COUPON.' on Fincon.';
+
+				WC_Fincon_Logger::log('API GetShipping ('.$this->_COUPON.') Error: Could not find Coupon item on Fincon.');
+
 			endif;
 
 			return false;
@@ -719,9 +821,17 @@ class fincon{
 		else:
 
 			if($_RETURN['ErrorString'] != ""):
+
 				$this->_ERRORS[] = $_RETURN['ErrorString'];
+
+				WC_Fincon_Logger::log('API CreateSalesOrder Error: '.$_RETURN['ErrorString']);
+
 			else:
+
 				$this->_ERRORS[] = 'Could not create Sales Order.';
+
+				WC_Fincon_Logger::log('API CreateSalesOrder Error: Could not create Sales Order.');
+
 			endif;
 
 			return false;
@@ -747,6 +857,7 @@ class fincon{
 			return;
 		endif;
 
+		WC_Fincon_Logger::log('Sales Order Start for #'.$_ORDER_ID);
 
 		$_ORDER = new WC_Order($_ORDER_ID);
 
@@ -910,9 +1021,19 @@ class fincon{
 			$_SALES_ORDER_NUMBER = $this->CreateSalesOrder($_SO, $_SALES_ORDER_DETAILS, $_ORDER_ID);
 
 			if($_SALES_ORDER_NUMBER):
+
 				update_post_meta($_ORDER_ID, '_fincon_sales_order', $_SALES_ORDER_NUMBER);
+				
 				$_ORDER->add_order_note('<strong>Fincon Sales Order:</strong><br/>'.$_SALES_ORDER_NUMBER);
+
+				delete_post_meta($_ORDER_ID, '_fincon_sales_error');
+
+				WC_Fincon_Logger::log('Sales Order Success: Assigned Sales Order '.$_SALES_ORDER_NUMBER.' to Order #'.$_ORDER_ID);
 			endif;
+
+		else:
+
+			WC_Fincon_Logger::log('Sales Order Error: No Products on Order');
 			
 		endif;
 
@@ -921,6 +1042,8 @@ class fincon{
 		if(count($this->_ERRORS) > 0):
 			update_post_meta($_ORDER_ID, '_fincon_sales_error', $this->_ERRORS);
 		endif;
+
+		WC_Fincon_Logger::log('Sales Order End for #'.$_ORDER_ID);
 
 	}
 

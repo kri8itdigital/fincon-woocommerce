@@ -90,7 +90,7 @@ class Fincon_Woocommerce_Public {
 		$_STOCK 	= $_PROD->get_stock_quantity();
 		$_SKU 		= $_PROD->get_sku();
 
-		$_FINCON = new fincon();
+		$_FINCON = new WC_Fincon();
 		$_FINCON->LogIn();
 		$_STOCKQTY = $_FINCON->GetStockItemQTY($_SKU);
 		$_FINCON->LogOut();
@@ -143,7 +143,7 @@ class Fincon_Woocommerce_Public {
 
 		if( is_cart() || is_checkout() ):
 
-			$_FINCON = new fincon();
+			$_FINCON = new WC_Fincon();
 
 			$_FINCON->LogIn();
 
@@ -208,7 +208,7 @@ class Fincon_Woocommerce_Public {
 
 		$_USER = get_user_by('id', $user_id);
 
-		$_FINCON = new fincon();
+		$_FINCON = new WC_Fincon();
 
 		$_FINCON->LogIn();
 

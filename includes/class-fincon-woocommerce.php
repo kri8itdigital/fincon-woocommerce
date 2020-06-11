@@ -70,7 +70,7 @@ class Fincon_Woocommerce {
 		if ( defined( 'FINCON_WOOCOMMERCE_VERSION' ) ) {
 			$this->version = FINCON_WOOCOMMERCE_VERSION;
 		} else {
-			$this->version = '1.1.5';
+			$this->version = '1.2.0';
 		}
 		$this->plugin_name = 'fincon-woocommerce';
 
@@ -107,6 +107,10 @@ class Fincon_Woocommerce {
 			include $filename;
 		endforeach;
 
+		/**
+		 * Fincon Log Class
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-fincon-woocommerce-log.php';
 
 		/**
 		 * Fincon Handler Class
@@ -179,7 +183,10 @@ class Fincon_Woocommerce {
 
 		$this->loader->add_action( 'init', $plugin_admin, 'setup_cron_schedules', 999);
 
-		$this->loader->add_action( 'admin_notices', $plugin_admin, 'display_api_notice');
+		/* NO LONGER NECESSARY BECAUSE OF STATUS PAGE */
+		//$this->loader->add_action( 'admin_notices', $plugin_admin, 'display_api_notice');
+		
+		$this->loader->add_action( 'admin_menu', $plugin_admin, 'admin_menu', 999);
 
 
 		if(get_option('fincon_woocommerce_active') == 'yes'):			
@@ -195,6 +202,7 @@ class Fincon_Woocommerce {
 			$this->loader->add_action( 'fincon_woocommerce_check_status', $plugin_admin, 'check_api');
 			$this->loader->add_action( 'fincon_woocommerce_sync_products', $plugin_admin, 'sync_stock_items');
 			$this->loader->add_action( 'fincon_woocommerce_sync_accounts', $plugin_admin, 'sync_user_items');
+			$this->loader->add_action( 'fincon_woocommerce_clean_logs', $plugin_admin, 'clean_logs');
 
 			if(get_option('fincon_woocommerce_sync_orders') == 'yes'):
 
@@ -203,6 +211,15 @@ class Fincon_Woocommerce {
 			endif;
 
 		endif;
+
+		$this->loader->add_action( 'wp_ajax_fincon_admin_trigger_product_sync', $plugin_admin, 'fincon_admin_trigger_product_sync');
+		$this->loader->add_action( 'wp_ajax_nopriv_fincon_admin_trigger_product_sync', $plugin_admin, 'fincon_admin_trigger_product_sync');
+
+		$this->loader->add_action( 'wp_ajax_fincon_admin_trigger_user_sync', $plugin_admin, 'fincon_admin_trigger_user_sync');
+		$this->loader->add_action( 'wp_ajax_nopriv_fincon_admin_trigger_user_sync', $plugin_admin, 'fincon_admin_trigger_user_sync');
+
+		$this->loader->add_action( 'wp_ajax_fincon_admin_trigger_connection_sync', $plugin_admin, 'fincon_admin_trigger_connection_sync');
+		$this->loader->add_action( 'wp_ajax_nopriv_fincon_admin_trigger_connection_sync', $plugin_admin, 'fincon_admin_trigger_connection_sync');
 
 	}
 

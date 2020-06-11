@@ -45,3 +45,22 @@
 }
 
 .fincon_sales_order{ font-weight:bold; }
+
+.fincon-admin-info-block{
+ padding:10px; background-color:#fff; margin-bottom:10px; text-align:center;
+}
+
+.fincon-status-page h1{ color:#003399 !important; text-transform:uppercase !important; margin-bottom:20px !important; padding:bottom:20px !important; border-bottom:1px solid red !important; }
+.fincon-status-page h2, .fincon-status-page h4{ text-transform:uppercase !important; color:#003399 !important; margin-top:0 !important; }
+.fincon-status-page h4{margin-bottom:20px; padding-bottom:20px; border-bottom:1px solid #f1f1f1;}
+.fincon-admin-status-block{ padding:20px; background-color:#fff; margin-bottom:20px;}
+.fincon-admin-status-item{ margin-bottom:20px; padding-bottom:20px; border-bottom:1px solid #f1f1f1; }
+.fincon-admin-status-item:last-of-type{ margin-bottom:0px !important; padding-bottom:0 !important; border-bottom:none !important; }
+
+.fincon-admin-status-item span{ text-transform:uppercase; }
+.fincon-admin-status-item strong.fincon-admin-success{ color:green; }
+.fincon-admin-status-item strong.fincon-admin-failure{ color:red; }
+
+.fincon-admin-trigger-block{padding:20px; background-color:#fff; margin-bottom:20px;  }
+.fincon-admin-trigger-block a{ display:inline-block; font-size:14px; text-transform:uppercase; line-height:30px; padding:0 10px; background-color:#003399; color:#fff; cursor:pointer; border-radius:10px; }
+.fincon-admin-trigger-block a span{ line-height:30px !important; }
