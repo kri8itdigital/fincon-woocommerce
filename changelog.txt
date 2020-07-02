@@ -1,3 +1,6 @@
+= 1.2.1 - July 2, 2020 =
+* Update: Category mapping system changes
+
 = 1.2.0 - June 11, 2020 =
 * Feature: Status Page
 * Feature: Log System

@@ -853,11 +853,23 @@ class Fincon_Woocommerce_Admin {
       		$_TERM = get_term_by( 'name', $_NAME, $_TAX, ARRAY_A );
       		$_ID =  $_TERM['term_id'];
 
+      	elseif(get_term_by( 'name', $_DESC, $_TAX, ARRAY_A )):
+
+      		$_TERM = get_term_by( 'name', $_DESC, $_TAX, ARRAY_A );
+      		$_ID =  $_TERM['term_id'];
+
+      		wp_update_term($_ID, $_TAX, array('name' => $_NAME));
+
+		    WC_Fincon_Logger::log('Category Update: Name Changed From '.$_DESC.' to '.$_NAME);
+
 		else:
-			$_TERM = wp_insert_term($_NAME, $_TAX, array('description'=> $_DESC,'slug' => $_NAME));
+			$_TERM = wp_insert_term($_NAME, $_TAX, array('description'=> '' ,'slug' => $_NAME));
 
 			if(!is_wp_error($_TERM)):
 		    	$_ID =  $_TERM['term_id'];
+
+		    	WC_Fincon_Logger::log('Category Created: '.$_NAME);
+
 		    else:
 		    	$_ID = false;
 		    endif;
@@ -1073,22 +1085,22 @@ class Fincon_Woocommerce_Admin {
 
 			$_ATTS = array();
 
-			$_CAT_ID  	= self::get_category_id($_DATA->Category,$_DATA->CatDescription);
+			$_CAT_ID  	= self::get_category_id($_DATA->CatDescription, $_DATA->Category);
 			if($_CAT_ID):
 				$_CATS[] = $_CAT_ID;
 			endif;
 
-			$_BRAND_ID 	= self::get_category_id($_DATA->Brand,$_DATA->BrandDescription);
+			$_BRAND_ID 	= self::get_category_id($_DATA->BrandDescription, $_DATA->Brand);
 			if($_BRAND_ID):
 				$_CATS[] = $_BRAND_ID;
 			endif;
 
-			$_GROUP_ID 	= self::get_category_id($_DATA->Group,$_DATA->GroupDescription);
+			$_GROUP_ID 	= self::get_category_id($_DATA->GroupDescription, $_DATA->Group);
 			if($_GROUP_ID):
 				$_CATS[] = $_GROUP_ID;
 			endif;
 
-			$_CLASS_ID 	= self::get_category_id($_DATA->ItemClass, $_DATA->ItemClassDescription);
+			$_CLASS_ID 	= self::get_category_id($_DATA->ItemClassDescription, $_DATA->ItemClass);
 			if($_CLASS_ID):
 				$_CATS[] = $_CLASS_ID;
 			endif;
