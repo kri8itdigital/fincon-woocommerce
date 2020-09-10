@@ -23,6 +23,7 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 		$sections = array(
 			''                => __( 'General Settings', 'fincon-woocommerce' ),
 			'products'            => __( 'Products', 'fincon-woocommerce' ),
+			'orders'            => __( 'Orders', 'fincon-woocommerce' ),
 			'users'        => __( 'Users', 'fincon-woocommerce' ),
 			'emails'        => __( 'Emails', 'fincon-woocommerce' )
 		);
@@ -69,13 +70,6 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 						'id'            => 'fincon_woocommerce_ext',
 						'default'       => 'no',
 						'checkboxgroup' => '',
-						'type'          => 'checkbox'
-					),
-					array(
-						'desc'          => __( 'Create Orders in Fincon', 'fincon-woocommerce' ),
-						'id'            => 'fincon_woocommerce_sync_orders',
-						'default'       => 'no',
-						'checkboxgroup' => 'end',
 						'type'          => 'checkbox'
 					),
 					array(
@@ -128,6 +122,57 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 
 			break;
 
+			case 'orders':
+				$kri8it_settings = array(
+					array(
+						'title' => __( 'Fincon Order Settings', 'fincon-woocommerce' ),
+						'type'  => 'title',
+						'id'    => 'fincon_woocommerce_settings',
+					),						
+					array(
+						'title'			=> 'Section Options',
+						'desc'          => __( 'Create Orders in Fincon', 'fincon-woocommerce' ),
+						'id'            => 'fincon_woocommerce_sync_orders',
+						'default'       => 'no',
+						'checkboxgroup' => 'start',
+						'type'          => 'checkbox'
+					),
+					array(
+						'desc'          => __( 'Use Guest Details as Debtor Details on Guest orders', 'fincon-woocommerce' ),
+						'id'            => 'fincon_woocommerce_pass_guest_user_info',
+						'default'       => 'no',
+						'checkboxgroup' => '',
+						'type'          => 'checkbox'
+					),
+					array(
+						'desc'          => __( 'Assign All Orders To Main Debtor Account', 'fincon-woocommerce' ),
+						'id'            => 'fincon_woocommerce_one_debtor_account',
+						'default'       => 'no',
+						'checkboxgroup' => 'end',
+						'type'          => 'checkbox'
+					),
+					array(
+						'title'         => __( 'Fincon Debtor Account', 'fincon-woocommerce' ),
+						'desc'          => __( 'The Account used for logging orders. Will be used for all orders or just for Guest orders', 'fincon-woocommerce' ),
+						'id'            => 'fincon_woocommerce_account',
+						'default'       => '',
+						'type'          => 'text'
+					),
+					array(
+						'title'         => __( 'Fincon Order Location', 'fincon-woocommerce' ),
+						'desc'          => __( 'The Fincon Order Location ', 'fincon-woocommerce' ),
+						'id'            => 'fincon_woocommerce_order_location',
+						'default'       => '00',
+						'type'          => 'text'
+					),				
+					array(
+						'type' => 'sectionend',
+						'id'   => 'fincon_woocommerce_settings',
+					)
+				);
+
+			break;
+
 			case 'products':
 
 				$kri8it_settings = array(
@@ -159,6 +204,13 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 						'type'          => 'checkbox'
 					),
 					array(
+						'desc'          => __( 'Sync Product Images', 'fincon-woocommerce' ),
+						'id'            => 'fincon_woocommerce_sync_product_images',
+						'default'       => 'no',
+						'checkboxgroup' => '',
+						'type'          => 'checkbox'
+					),
+					array(
 						'desc'          => __( 'Exclude Stock Assigned to Sales Orders when calculating stock', 'fincon-woocommerce' ),
 						'id'            => 'fincon_woocommerce_exclude_order',
 						'default'       => 'no',
@@ -166,9 +218,9 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 						'type'          => 'checkbox'
 					),
 					array(
-						'title'         => __( 'Fincon Stock Location', 'fincon-woocommerce' ),
-						'desc'          => __( 'The Fincon Stock Location ', 'fincon-woocommerce' ),
-						'id'            => 'fincon_woocommerce_location',
+						'title'         => __( 'Fincon Stock Location(s)', 'fincon-woocommerce' ),
+						'desc'          => __( 'The Fincon Stock Location (comma separated to use multiple)', 'fincon-woocommerce' ),
+						'id'            => 'fincon_woocommerce_stock_location',
 						'default'       => '00',
 						'type'          => 'text'
 					),
@@ -241,20 +293,6 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 						'checkboxgroup' => '',
 						'type'          => 'checkbox'
 					),*/
-					array(
-						'desc'          => __( 'Assign All Orders To Main Debtor Account', 'fincon-woocommerce' ),
-						'id'            => 'fincon_woocommerce_one_debtor_account',
-						'default'       => 'no',
-						'checkboxgroup' => 'end',
-						'type'          => 'checkbox'
-					),
-					array(
-						'title'         => __( 'Fincon Debtor Account', 'fincon-woocommerce' ),
-						'desc'          => __( 'The Account used for logging orders. Will be used for all orders or just for Guest orders', 'fincon-woocommerce' ),
-						'id'            => 'fincon_woocommerce_account',
-						'default'       => '',
-						'type'          => 'text'
-					),
 					/*
 					array(
 						'title'         => __( 'Sales Rep Code', 'fincon-woocommerce' ),
@@ -454,7 +492,7 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 
 					if(isset($_POST['fincon_woocommerce_sync_stock']) && $_POST['fincon_woocommerce_sync_stock'] == 1):
 
-						if($_POST['fincon_woocommerce_location'] == ''):
+						if($_POST['fincon_woocommerce_stock_location'] == ''):
 							$_POST['fincon_woocommerce_sync_stock'] = 0;
 							WC_Admin_Settings::add_error('Stock location is required');
 							$_ERRORS = true;
@@ -511,6 +549,42 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 
 			break;
 
+			case "orders":
+
+				$_ERRORS = false;
+
+				if(get_option('fincon_woocommerce_active') == 'yes'):
+
+					if(isset($_POST['fincon_woocommerce_sync_orders']) && $_POST['fincon_woocommerce_sync_orders'] == 1):
+
+						if($_POST['fincon_woocommerce_account'] == ''):
+							$_POST['fincon_woocommerce_sync_orders'] = 0;
+							$_ERRORS = true;
+							WC_Admin_Settings::add_error('DEBTOR account required for Guest orders');
+						endif;
+
+						if($_POST['fincon_woocommerce_order_location'] == ''):
+							$_POST['fincon_woocommerce_sync_orders'] = 0;
+							$_ERRORS = true;
+							WC_Admin_Settings::add_error('Order Location required for creating orders.');
+						endif;
+
+					endif;
+
+				else:
+
+					$_POST['fincon_woocommerce_sync_orders'] 		= 0;
+
+					WC_Admin_Settings::add_error('Cannot save Order settings - please ensure Fincon is correctly enabled first.');
+
+				endif;
+
+				
+
+
+				
+			break;
+
 			case "users":
 
 				$_ERRORS = false;
@@ -520,12 +594,7 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 				if(get_option('fincon_woocommerce_active') == 'yes'):
 
 					if(isset($_POST['fincon_woocommerce_sync_users']) && $_POST['fincon_woocommerce_sync_users'] == 1):
-
-						if($_POST['fincon_woocommerce_account'] == ''):
-							$_POST['fincon_woocommerce_sync_users'] = 0;
-							$_ERRORS = true;
-							WC_Admin_Settings::add_error('DEBTOR account required for Guest orders');
-						endif;
+				
 
 
 						if(!$_ERRORS && !get_option('fincon_woocommerce_do_inital_user_sync')):
@@ -548,8 +617,6 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 				else:
 
 					$_POST['fincon_woocommerce_sync_users'] 		= 0;
-					$_POST['fincon_woocommerce_one_debtor_account'] = 0;
-					$_POST['fincon_woocommerce_account'] 			= '';
 
 					WC_Admin_Settings::add_error('Cannot save User settings - please ensure Fincon is correctly enabled first.');
 

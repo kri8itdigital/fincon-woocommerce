@@ -70,7 +70,7 @@ class Fincon_Woocommerce {
 		if ( defined( 'FINCON_WOOCOMMERCE_VERSION' ) ) {
 			$this->version = FINCON_WOOCOMMERCE_VERSION;
 		} else {
-			$this->version = '1.2.1';
+			$this->version = '1.3.0';
 		}
 		$this->plugin_name = 'fincon-woocommerce';
 
@@ -188,6 +188,8 @@ class Fincon_Woocommerce {
 		
 		$this->loader->add_action( 'admin_menu', $plugin_admin, 'admin_menu', 999);
 
+		$this->loader->add_action( 'woocommerce_default_address_fields', $plugin_admin, 'woocommerce_default_address_fields', 999);
+
 
 		if(get_option('fincon_woocommerce_active') == 'yes'):			
 
@@ -236,7 +238,6 @@ class Fincon_Woocommerce {
 
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
 		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
-
 
 		if(get_option('fincon_woocommerce_active') == 'yes'):
 

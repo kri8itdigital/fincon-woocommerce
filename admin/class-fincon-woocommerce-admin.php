@@ -898,6 +898,15 @@ class Fincon_Woocommerce_Admin {
 
 			$_LAST_UPDATE = get_option('fincon_woocommerce_last_product_update');
 
+			/* 1.3.0 - add images flag */
+			$_DO_IMAGES = false;
+
+			if(get_option('fincon_woocommerce_sync_product_images') == 'yes'):
+
+				$_DO_IMAGES = true;
+
+			endif;
+
 			$_FINCON = new WC_Fincon();
 
 			$_FINCON->LogIn();
@@ -908,11 +917,11 @@ class Fincon_Woocommerce_Admin {
 
 				$_DATE_TO_WORK_WITH = self::dateTimeToDouble($_LAST_UPDATE);
 
-				$_COUNT = self::fincon_product_sync_partial($_FINCON, $_DATE_TO_WORK_WITH);
+				$_COUNT = self::fincon_product_sync_partial($_FINCON, $_DATE_TO_WORK_WITH, $_DO_IMAGES);
 
 			else:
 
-				$_COUNT = self::fincon_product_sync_full($_FINCON);
+				$_COUNT = self::fincon_product_sync_full($_FINCON, $_DO_IMAGES);
 
 			endif;
 
@@ -992,7 +1001,7 @@ class Fincon_Woocommerce_Admin {
 	 *
 	 * @since    1.0.0
 	 */
-	public static function fincon_product_sync_full(&$_FINCON ){
+	public static function fincon_product_sync_full(&$_FINCON,$_DO_IMAGES){
 
 		$_COUNT = 0;
 
@@ -1003,7 +1012,7 @@ class Fincon_Woocommerce_Admin {
 
 		if(!$_EOF):
 
-			$_COUNT += self::insert_update_product($_FIRST, $_FINCON);
+			$_COUNT += self::insert_update_product($_FIRST, $_FINCON,$_DO_IMAGES);
 
 		endif;
 
@@ -1011,7 +1020,7 @@ class Fincon_Woocommerce_Admin {
 
 			$_STOCK = $_FINCON->GetStockNext($_EOF);
 
-			$_COUNT += self::insert_update_product($_STOCK, $_FINCON);
+			$_COUNT += self::insert_update_product($_STOCK, $_FINCON,$_DO_IMAGES);
 
 			$_EOF = $_STOCK['Eof'];
 
@@ -1029,7 +1038,7 @@ class Fincon_Woocommerce_Admin {
 	 *
 	 * @since    1.0.0
 	 */
-	public static function fincon_product_sync_partial(&$_FINCON, $_DATE_TO_WORK_WITH){
+	public static function fincon_product_sync_partial(&$_FINCON, $_DATE_TO_WORK_WITH,$_DO_IMAGES){
 
 		$_COUNT = 0;
 		
@@ -1045,7 +1054,7 @@ class Fincon_Woocommerce_Admin {
 
 				$_FDATA = $_FINCON->GetStockItem($_SKU, true);
 
-				$_COUNT += self::insert_update_product($_FDATA, $_FINCON);
+				$_COUNT += self::insert_update_product($_FDATA, $_FINCON,$_DO_IMAGES);
 
 			endforeach;
 
@@ -1065,9 +1074,9 @@ class Fincon_Woocommerce_Admin {
 	 *
 	 * @since    1.0.0
 	 */
-	public static function insert_update_product($_STOCK, &$_FINCON){
+	public static function insert_update_product($_STOCK, &$_FINCON,$_DO_IMAGES){
 
-		$_FLOC 		= $_FINCON->_LOC;
+		$_FLOC 		= $_FINCON->_S_LOC;
 		$_FEXCLUDE 	= $_FINCON->_EXCLUDE;
 
 		$_DATA 		= $_STOCK['StockBuf'];
@@ -1122,13 +1131,22 @@ class Fincon_Woocommerce_Admin {
 
 			endif;
 
-			$_STOCKQTY = $_LOC[intval($_FLOC)]->InStock;
+			$_LOCATIONS = str_replace(" ", "", $_FLOC);
+			$_LOCATIONS = explode(",", $_LOCATIONS);
 
-			if($_FEXCLUDE):
+			$_STOCKQTY = 0;
 
-				$_STOCKQTY -= $_LOC[intval($_FLOC)]->SalesOrders;	
+			foreach($_LOCATIONS as $_LOCATION):
 
-			endif;
+				$_THIS_STOCK = $_LOC[intval($_LOCATION)]->InStock;
+
+				if($_FEXCLUDE):
+					$_THIS_STOCK -= $_LOC[intval($_LOCATION)]->SalesOrders;
+				endif;
+
+				$_STOCKQTY += $_THIS_STOCK;
+
+			endforeach;
 
 			if($_NEW):
 
@@ -1149,7 +1167,6 @@ class Fincon_Woocommerce_Admin {
 				$_PROD->set_sold_individually(false);
 
 			endif;
-
 			
 
 			$_PROD->set_category_ids($_CATS);
@@ -1174,6 +1191,23 @@ class Fincon_Woocommerce_Admin {
 			$_PROD->set_width($_DATA->BoxWidth);
 
 			$_PROD->set_height($_DATA->BoxHeight);
+
+
+			/* 1.3.0 -- sync images */
+
+			if($_DO_IMAGES):
+
+				$_IMAGE = $_FINCON->GetStockImage($_SKU);
+
+				if($_IMAGE):
+
+					$_ATTACHMENT_ID = self::fincon_upload_attach_image($_SKU, $_IMAGE);
+
+					$_PROD->set_image_id($_ATTACHMENT_ID);
+
+				endif;
+
+			endif;
 			
 			$_PROD->save();
 
@@ -1470,6 +1504,126 @@ class Fincon_Woocommerce_Admin {
 		echo 'yes';
 
 		exit;
+	}
+
+	/**
+	 * UPLOAD AND ATTACH PRODUCT IMAGE
+	 *
+	 * @since    1.3.0
+	 */
+	public static function fincon_upload_attach_image($SKU, $DATA){
+
+		$post_id = wc_get_product_id_by_sku($SKU);
+
+	    $image_data       	= base64_decode($DATA);
+
+	    $file_info = self::fincon_mime_extension($SKU, $DATA);
+
+	    if($file_info):
+
+		    $image_name       	= $SKU.'.'.$file_info['ext'];
+		    $upload_dir       	= wp_upload_dir();
+
+		    $unique_file_name 	= wp_unique_filename( $upload_dir['path'], $image_name );
+		    $filename         	= basename( $unique_file_name );
+
+		    if( wp_mkdir_p( $upload_dir['path'] ) ) {
+		        $file = $upload_dir['path'] . '/' . $filename;
+		    } else {
+		        $file = $upload_dir['basedir'] . '/' . $filename;
+		    }
+
+		    file_put_contents( $file, $image_data );
+
+		    $attachment = array(
+		        'post_mime_type' => $file_info['mime'],
+		        'post_title'     => sanitize_file_name( $filename ),
+		        'post_content'   => '',
+		        'post_status'    => 'inherit'
+		    );
+
+		    $attach_id = wp_insert_attachment( $attachment, $file, $post_id );
+		    
+		    require_once(ABSPATH . 'wp-admin/includes/image.php');
+
+		    $attach_data = wp_generate_attachment_metadata( $attach_id, $file );
+
+		    wp_update_attachment_metadata( $attach_id, $attach_data );
+
+		    return $attach_id;
+
+		else:
+
+			return false;
+
+		endif;
+
+
+	}
+
+	/**
+	 * SORT OUT MIME AND EXTENSION
+	 *
+	 * @since    1.3.0
+	 */
+	public static function fincon_mime_extension($SKU, $DATA){
+
+	    $image_data       	= base64_decode($DATA);
+
+	    $file_info = finfo_open();
+
+		$mime_type = finfo_buffer($file_info, $image_data, FILEINFO_MIME_TYPE);
+
+		finfo_close($file_info);
+
+		$mimes = get_allowed_mime_types();
+
+		$the_extension = false;
+
+		foreach ( $mimes as $ext => $mime ):
+
+		   if($mime == $mime_type):
+
+		   	$_extensions = explode("|", $ext);
+
+		   	$the_extension = $_extensions[0];
+
+		   endif;
+
+		endforeach;
+
+		if($the_extension):
+
+			return array('mime'=> $mime_type, 'ext' => $the_extension);
+
+		else:
+
+			WC_Fincon_Logger::log('Image for '.$SKU.' has failed to upload.');
+
+			return false;
+
+		endif;
+
+
+	}
+
+	/**
+	 * REMOVE AND LIMIT CHECKOUT FIELDS 
+	 *
+	 * @since    1.3.0
+	 */
+	public static function woocommerce_default_address_fields($fields){
+
+
+        unset($fields['address_2']);
+
+        $fields['address_1']['maxlength'] 	= 40;
+        $fields['city']['maxlength'] 		= 40;
+        $fields['state']['maxlength'] 		= 40;
+        $fields['postcode']['maxlength'] 	= 4;
+
+        return $fields;
+
 	}
 
 

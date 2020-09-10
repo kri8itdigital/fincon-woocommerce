@@ -16,7 +16,7 @@
  * Plugin Name:       Fincon For Woocommerce
  * Plugin URI:        https://github.com/kri8itdigital/fincon-woocommerce
  * Description:       Connects your Fincon accounting system WebAPI to Woocommerce.
- * Version:           1.2.1
+ * Version:           1.3.0
  * Author:            Hilton Moore
  * Author URI:        https://www.kri8it.com
  * License:           GPL-2.0+
@@ -35,7 +35,7 @@ if ( ! defined( 'WPINC' ) ) {
  * Start at version 1.0.0 and use SemVer - https://semver.org
  * Rename this for your plugin and update it as you release new versions.
  */
-define( 'FINCON_WOOCOMMERCE_VERSION', '1.2.1' );
+define( 'FINCON_WOOCOMMERCE_VERSION', '1.3.0' );
 define( 'FINCON_WOOCOMMERCE_CRON_BASE', str_replace("fincon-woocommerce.php", "cron.php", trailingslashit(get_site_url()).'wp-content/plugins/'.plugin_basename(__FILE__)));
 
 /**
@@ -82,10 +82,10 @@ function fincon_woocommerce_check_for_update(){
 	        'zip_url'            => 'https://github.com/kri8itdigital/fincon-woocommerce/archive/master.zip',
 	        'homepage'           => 'https://github.com/kri8itdigital/fincon-woocommerce',
 	        'sslverify'          => true,
-	        'requires'           => '4.0',
-	        'tested'             => '5.4',
+	        'requires'           => '5.0',
+	        'tested'             => '5.5',
 	        'readme'             => 'README.md',
-	        'version'			 => '1.2.1'
+	        'version'			 => '1.3.0'
 	    );
 
 	    new fincon_updater( $config );

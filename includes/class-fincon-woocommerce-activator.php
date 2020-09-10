@@ -31,11 +31,25 @@ class Fincon_Woocommerce_Activator {
 	 */
 	public static function activate() {
 
-		if ( ! is_plugin_active( 'woocommerce/woocommerce.php' ) and current_user_can( 'activate_plugins' ) ) {
+		if ( ! is_plugin_active( 'woocommerce/woocommerce.php' ) and current_user_can( 'activate_plugins' ) ):
 	    
-	    wp_die('Sorry, but the Fincon Woocommerce plugin requires woocommerce to be enabled. <br><a href="' . admin_url( 'plugins.php' ) . '">&laquo; Return to Plugins</a>');
+	    	wp_die('Sorry, but the Fincon Woocommerce plugin requires woocommerce to be enabled. <br><a href="' . admin_url( 'plugins.php' ) . '">&laquo; Return to Plugins</a>');
 
-	    }
+	    else:
+	    	/* VERSION 1.3.0 UPDATES */
+	    	if(FINCON_WOOCOMMERCE_VERSION == '1.3.0'):
+	    		if(get_option('fincon_woocommerce_location')):
+
+					$_LOCATION = get_option('fincon_woocommerce_location');
+					update_option('fincon_woocommerce_stock_location', $_LOCATION);
+					update_option('fincon_woocommerce_order_location', $_LOCATION);
+					delete_option('fincon_woocommerce_location');
+
+				endif;
+
+			endif;
+
+	    endif;
 	}
 
 }

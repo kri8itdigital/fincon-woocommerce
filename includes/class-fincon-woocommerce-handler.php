@@ -15,13 +15,15 @@ class WC_Fincon{
 	var $_ERRORS = array();
 	var $_ACC = '';
 	var $_SHIPPING = '';
-	var $_LOC = '';
+	var $_S_LOC = '';
+	var $_O_LOC = '';
 	var $_COUPON = '';
 	var $_ONE_ACC = '';
 	var $_EXCLUDE = '';
 	var $_REP = '';
 	var $_PRICE = '';
 	var $_CREATE = '';
+	var $_GUEST = '';
 
 
 
@@ -60,7 +62,8 @@ class WC_Fincon{
 		$this->_D 			= get_option('fincon_woocommerce_data');
 		$this->_ACC 		= get_option('fincon_woocommerce_account');
 		$this->_SHIP 		= get_option('fincon_woocommerce_delivery');
-		$this->_LOC 		= get_option('fincon_woocommerce_location');
+		$this->_S_LOC 		= get_option('fincon_woocommerce_stock_location');
+		$this->_O_LOC 		= get_option('fincon_woocommerce_order_location');
 		$this->_COUPON 		= get_option('fincon_woocommerce_coupon');
 		$this->_REP 		= get_option('fincon_woocommerce_sales_rep');
 		$this->_PRICE 		= get_option('fincon_woocommerce_price');
@@ -88,6 +91,13 @@ class WC_Fincon{
 		else:
 			$this->_CREATE = false;
 		endif;
+
+		if(get_option('fincon_woocommerce_pass_guest_user_info') == 'yes'):
+			$this->_GUEST = true;
+		else:
+			$this->_GUEST = false;
+		endif;
+
 
 		try{
 			$this->_SOAP = new SoapClient($this->_URL);
@@ -643,15 +653,26 @@ class WC_Fincon{
 		$_FOUND = $_RETURN['Found'];
 
 		if($_FOUND):
+
+			$_LOCATIONS = str_replace(" ", "", $this->_S_LOC);
+			$_LOCATIONS = explode(",", $_LOCATIONS);
+
+			$_STOCK = 0;
 			
 			$_F_S = $_RETURN['StockBuf'];
 			$_F_L = $_RETURN['StockLoc'];
 
-			$_STOCK = $_F_L[intval($this->_LOC)]->InStock;
+			foreach($_LOCATIONS as $_LOC):
 
-			if($this->_EXCLUDE):
-				$_STOCK -= $_F_L[intval($this->_LOC)]->SalesOrders;
-			endif;
+				$_THIS_STOCK = $_F_L[intval($_LOC)]->InStock;
+
+				if($this->_EXCLUDE):
+					$_THIS_STOCK -= $_F_L[intval($_LOC)]->SalesOrders;
+				endif;
+
+				$_STOCK += $_THIS_STOCK;
+
+			endforeach;
 
 			return $_STOCK;
 
@@ -671,6 +692,41 @@ class WC_Fincon{
 			endif;
 			
 			return false;
+		endif;
+	}
+
+
+
+
+
+
+
+
+
+	
+	/*
+	HELPER - GET STOCK ITEM
+	 */
+	public function GetStockImage($SKU){
+
+		$_IMAGE = '';
+		$_FOUND = false;
+
+		$_RETURN = $this->_SOAP->GetStockPicture($this->_ID, $SKU, $_IMAGE, $_FOUND, $this->_ERR);
+
+
+		if($_RETURN['ErrorString'] == ""):
+
+			return $_RETURN['Picture'];
+
+		else:
+				
+			$this->_ERRORS[] = $_RETURN['ErrorString'];
+
+			WC_Fincon_Logger::log('API GetStockImage Error: '.$_RETURN['ErrorString']);
+			
+			return false;
+
 		endif;
 	}
 
@@ -937,21 +993,39 @@ class WC_Fincon{
 		if($_DEP):
 
 			$_SO->AccNo 			= $_ACC_TO_USE;
-			$_SO->LocNo 			= $this->_LOC;
+			$_SO->LocNo 			= $this->_O_LOC;
 			$_SO->TotalExcl			= number_format($_ORDER->get_total() - $_ORDER->get_total_tax(), 2, ".", "");
 			$_SO->TotalIncl			= number_format($_ORDER->get_total(), 2, ".", "");
 			$_SO->CustomerRef 		= $_ORDER_ID;
-			$_SO->DebName 			= $_DEP->DebName;
-			$_SO->Addr1 			= $_DEP->Addr1;
-			$_SO->Addr2 			= $_DEP->Addr2;
-			$_SO->Addr3 			= $_DEP->Addr3;
-			$_SO->PCode 			= $_DEP->PCode;
-			$_SO->DelName 			= $_ORDER->get_formatted_shipping_full_name();
-			$_SO->DelAddr1 			= $_ORDER->get_shipping_address_1();
-			$_SO->DelAddr2 			= $_ORDER->get_shipping_address_2();
-			$_SO->DelAddr3 			= $_ORDER->get_shipping_city();
-			$_SO->DelAddr4 			= $_ORDER->get_shipping_state().' '.$_ORDER->get_shipping_country();
-			$_SO->DelPCode 			= $_ORDER->get_shipping_postcode();
+
+
+			if($this->_GUEST):
+				$_SO->DebName 			= $_ORDER->get_formatted_billing_full_name();;
+				$_SO->Addr1 			= $_ORDER->get_billing_address_1();
+				$_SO->Addr2 			= $_ORDER->get_billing_city();
+				$_SO->Addr3 			= $_ORDER->get_billing_state().' '.$_ORDER->get_billing_country();
+				$_SO->PCode 			= $_ORDER->get_billing_postcode();
+			else:
+				$_SO->DebName 			= $_DEP->DebName;
+				$_SO->Addr1 			= $_DEP->Addr1;
+				$_SO->Addr2 			= $_DEP->Addr2;
+				$_SO->Addr3 			= $_DEP->Addr3;
+				$_SO->PCode 			= $_DEP->PCode;
+			endif; 
+			
+			if(!$_ORDER->get_formatted_shipping_full_name()):
+				$_SO->DelName 			= $_ORDER->get_formatted_billing_full_name();
+				$_SO->DelAddr1 			= $_ORDER->get_billing_address_1();
+				$_SO->DelAddr2 			= $_ORDER->get_billing_city();
+				$_SO->DelAddr3 			= $_ORDER->get_billing_state().' '.$_ORDER->get_billing_country();
+				$_SO->DelPCode 			= $_ORDER->get_billing_postcode();
+			else:	
+				$_SO->DelName 			= $_ORDER->get_formatted_shipping_full_name();
+				$_SO->DelAddr1 			= $_ORDER->get_shipping_address_1();
+				$_SO->DelAddr2 			= $_ORDER->get_shipping_city();
+				$_SO->DelAddr3 			= $_ORDER->get_shipping_state().' '.$_ORDER->get_shipping_country();
+				$_SO->DelPCode 			= $_ORDER->get_shipping_postcode();
+			endif;
 			$_SO->DelInstruc1 		= $_NOTE_1;
 			$_SO->DelInstruc2 		= $_NOTE_2;
 			$_SO->DelInstruc3 		= $_NOTE_3;
