@@ -68,6 +68,7 @@ require plugin_dir_path( __FILE__ ) . 'includes/class-fincon-woocommerce.php';
 
 
 add_action( 'plugins_loaded', 'fincon_woocommerce_check_for_update' );
+add_action( 'plugins_loaded', 'fincon_woocommerce_setup_php_debugging' );
 function fincon_woocommerce_check_for_update(){
 
 	require_once plugin_dir_path( __FILE__ ) . 'includes/class-fincon-woocommerce-updater.php';
@@ -89,6 +90,44 @@ function fincon_woocommerce_check_for_update(){
 	    );
 
 	    new fincon_updater( $config );
+
+}
+
+
+function fincon_woocommerce_setup_php_debugging(){
+
+	$_FOLDER = ABSPATH.'wp-content/fc-errors';
+
+	$_FILE_DATE = date('Y-m-d');
+
+	$_FILE_NAME = $_FILE_DATE.'.txt';
+
+	$_LOG = trailingslashit($_FOLDER).$_FILE_NAME;
+
+	if (!file_exists($_FOLDER)):
+		    mkdir($_FOLDER, 0777, true);
+		endif;
+
+	if(!is_file($_LOG)):
+
+		$_WRITER 	= fopen($_LOG, 'a+');
+
+		$_DATE 		= wp_date('Y-m-d H:i:s');
+
+		$_MSG = '-- FINCON PHP LOG FOR '.$_FILE_DATE.' --';
+
+		if($_MSG == ''):
+			fwrite($_WRITER,"\r\n");
+		else:
+			fwrite($_WRITER,$_DATE.' :: '.$_MSG."\r\n");
+		endif;
+
+
+		unset($_WRITER);
+	endif;
+
+	@ini_set('log_errors','On');
+	@ini_set('error_log', $_LOG);
 
 }
 

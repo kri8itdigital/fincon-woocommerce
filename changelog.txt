@@ -2,6 +2,7 @@
 * Feature: Sync Product Images
 * Feature: Different Stock Location for orders
 * Feature: Multiple Stock Locations for products
+* Feature: PHP Error logging
 * Update: Checkout field Address 2 removed
 * Update: Checkout field Address 1 and City limited to 40 characters
 
