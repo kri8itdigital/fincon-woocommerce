@@ -594,6 +594,13 @@ class Fincon_Woocommerce_Admin {
 
        	<h1>Fincon Status</h1>
 		<div id="FC30SECONDS" class="fincon-admin-info-block"><small><em>This page will refresh every 30 seconds</em></small></div>
+
+		<div class="fincon-admin-status-block">
+			<h2>Server Variables</h2>
+
+			<div class="fincon-admin-status-item"> <span>PHP Version:</span> <strong><?php echo phpversion(); ?></strong></div>
+		</div>
+
     	<div class="fincon-admin-status-block">
     		<h2>Fincon Status</h2>
 
@@ -893,6 +900,7 @@ class Fincon_Woocommerce_Admin {
 			WC_Fincon_Logger::log('Product Sync Started');
 
 			set_time_limit(0);
+			@ini_set('max_execution_time',0);
 
 			update_option('fincon_woocommerce_product_sync_running', 'yes');
 
@@ -956,6 +964,7 @@ class Fincon_Woocommerce_Admin {
 			WC_Fincon_Logger::log('User Sync Started');
 			
 			set_time_limit(0);
+			@ini_set('max_execution_time',0);
 
 			update_option('fincon_woocommerce_user_sync_running', 'yes');
 

@@ -66,7 +66,6 @@ register_deactivation_hook( __FILE__, 'deactivate_fincon_woocommerce' );
 require plugin_dir_path( __FILE__ ) . 'includes/class-fincon-woocommerce.php';
 
 
-
 add_action( 'plugins_loaded', 'fincon_woocommerce_check_for_update' );
 add_action( 'plugins_loaded', 'fincon_woocommerce_setup_php_debugging' );
 function fincon_woocommerce_check_for_update(){
