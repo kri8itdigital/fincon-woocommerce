@@ -1,7 +1,7 @@
 <?php
 
 define('WC_LOG_FOLDER', ABSPATH.'wp-content/fc-logs');
-
+define('WC_ERROR_FOLDER', ABSPATH.'wp-content/fc-errors');
 
 
 
@@ -210,46 +210,52 @@ class WC_Fincon_Logger{
 	 */
 	public static function clean(){
 
+		$_AMT = 10;
+
+		$_FOLDERS_TO_CLEAN = array(WC_LOG_FOLDER, WC_ERROR_FOLDER);
+
 		$_EXCLUDES = array('.', '..');
 
-		if (file_exists(WC_LOG_FOLDER)):
+		foreach($_FOLDERS_TO_CLEAN as $_FOLDER):
 
-			$_FILES = scandir(WC_LOG_FOLDER, SCANDIR_SORT_DESCENDING);
+			if (file_exists($_FOLDER)):
 
-			foreach($_FILES as $_KEY => $_FILE):
-				if(in_array($_FILE, $_EXCLUDES)):
-					unset($_FILES[$_KEY]);
-				endif;
-			endforeach;
+				$_FILES = scandir($_FOLDER, SCANDIR_SORT_DESCENDING);
 
-			if(count($_FILES) > 10):
-
-				$_DATA = array_chunk($_FILES, $_AMT);
-
-				$_COUNT = 0;
-
-				foreach($_DATA as $_FILES):
-
-					if($_COUNT > 0):
-
-						foreach($_FILES as $_FILE):
-							$_LINK = trailingslashit(WC_LOG_FOLDER).$_FILE;
-							unlink($_LINK);
-						endforeach;
-
+				foreach($_FILES as $_KEY => $_FILE):
+					if(in_array($_FILE, $_EXCLUDES)):
+						unset($_FILES[$_KEY]);
 					endif;
-
-					$_COUN++;
-
 				endforeach;
+
+
+
+				if(count($_FILES) > $_AMT):
+
+					$_DATA = array_chunk($_FILES, $_AMT);
+
+					$_COUNT = 0;
+
+					foreach($_DATA as $_FILES):
+
+						if($_COUNT > 0):
+
+							foreach($_FILES as $_FILE):
+								$_LINK = trailingslashit($_FOLDER).$_FILE;
+								unlink($_LINK);
+							endforeach;
+
+						endif;
+
+						$_COUNT++;
+
+					endforeach;
+
+				endif;
 
 			endif;
 
-		else:
-
-			return false;
-
-		endif;
+		endforeach;
 
 	}
 

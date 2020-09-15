@@ -420,7 +420,7 @@ class Fincon_Woocommerce_Admin {
 			update_option('fincon_woocommerce_active', 'no');
 
 			if(get_option('fincon_woocommerce_enable_connection_email') == 'yes'):
-				$this->do_email_notification('connection', $_LIVE['ErrorString']);
+				self::do_email_notification('connection', $_LIVE['ErrorString']);
 			endif;
 
 		endif;
@@ -943,7 +943,7 @@ class Fincon_Woocommerce_Admin {
 			WC_Fincon_Logger::log('Product Sync Ended');
 			
 			if(get_option('fincon_woocommerce_enable_product_email') == 'yes' && $_COUNT > 0):
-				$this->do_email_notification('products', $_FINCON->_ERRORS);
+				self::do_email_notification('products', $_FINCON->_ERRORS);
 			endif;
 
 		endif;
@@ -962,9 +962,6 @@ class Fincon_Woocommerce_Admin {
 		if(!get_option('fincon_woocommerce_user_sync_running') || get_option('fincon_woocommerce_user_sync_running') == 'no'):
 
 			WC_Fincon_Logger::log('User Sync Started');
-			
-			set_time_limit(0);
-			@ini_set('max_execution_time',0);
 
 			update_option('fincon_woocommerce_user_sync_running', 'yes');
 
@@ -996,7 +993,7 @@ class Fincon_Woocommerce_Admin {
 			WC_Fincon_Logger::log('User Sync Ended');
 			
 			if(get_option('fincon_woocommerce_enable_user_email') == 'yes' && $_COUNT > 0):
-				$this->do_email_notification('users', $_FINCON->_ERRORS);
+				self::do_email_notification('users', $_FINCON->_ERRORS);
 			endif;
 
 		endif;
@@ -1020,12 +1017,16 @@ class Fincon_Woocommerce_Admin {
 		$_EOF = $_FIRST['Eof'];
 
 		if(!$_EOF):
+			
+			set_time_limit(300);
 
 			$_COUNT += self::insert_update_product($_FIRST, $_FINCON,$_DO_IMAGES);
 
 		endif;
 
 		while(!$_EOF):
+			
+			set_time_limit(300);
 
 			$_STOCK = $_FINCON->GetStockNext($_EOF);
 
@@ -1058,6 +1059,8 @@ class Fincon_Woocommerce_Admin {
 		if(is_array($_LIST) && count($_LIST) > 0):
 
 			foreach($_LIST as $_ITEM):
+			
+				set_time_limit(300);
 
 				$_SKU = $_ITEM->ItemNo;
 
@@ -1134,9 +1137,7 @@ class Fincon_Woocommerce_Admin {
 				$_PROD = new WC_Product();
 				$_PROD->set_sku($_SKU);
 
-				$_NEW = true;
-
-				
+				$_NEW = true;				
 
 			endif;
 
@@ -1311,16 +1312,20 @@ class Fincon_Woocommerce_Admin {
 		$_EOF = $_FIRST['Eof'];		
 
 		if(!$_EOF):
+			
+			set_time_limit(300);
 
-			$_COUNT += self::insert_update_user($_FIRST, $_FINCON);
+			$_COUNT += self::insert_update_user($_FIRST, $_FINCON, true);
 
 		endif;
 
 		while(!$_EOF):
+			
+			set_time_limit(300);
 
 			$_USER = $_FINCON->GetDebAccountNext($_EOF);
 
-			$_COUNT += self::insert_update_user($_USER, $_FINCON);
+			$_COUNT += self::insert_update_user($_USER, $_FINCON, true);
 
 			$_EOF = $_USER['Eof'];
 
@@ -1347,12 +1352,14 @@ class Fincon_Woocommerce_Admin {
 		if(is_array($_LIST) && count($_LIST) > 0):
 
 			foreach($_LIST as $_ITEM):
+			
+				set_time_limit(300);
 
 				$_ACC_NO = $_ITEM->AccNo;
 
 				$_FDATA = $_FINCON->GetDebAccount($_ACC_NO);
 
-				$_COUNT += self::insert_update_user($_FDATA, $_FINCON);
+				$_COUNT += self::insert_update_user($_FDATA, $_FINCON, false);
 
 			endforeach;
 
@@ -1372,9 +1379,13 @@ class Fincon_Woocommerce_Admin {
 	 *
 	 * @since    1.0.0
 	 */
-	public static function insert_update_user($_USER, &$_FINCON){
+	public static function insert_update_user($_USER, &$_FINCON, $LOOP){
 
-		$_ACC = $_USER['AccountBuf'];
+		if($LOOP):
+			$_ACC = $_USER['AccountBuf'];
+		else:
+			$_ACC = $_USER;
+		endif;
 
 		if ($_ACC->WebList == 'Y' && $_ACC->Active == 'Y'):
 
@@ -1392,7 +1403,7 @@ class Fincon_Woocommerce_Admin {
 
 				if($_ID == 0):
 
-					$_ID = wp_create_user($_ACC->AccNo, $_ACC->EMail, $_ACC->Password);
+					$_ID = wp_create_user($_ACC->AccNo, $_ACC->Password, $_ACC->EMail);
 
 					if(is_wp_error($_ID)):
 
