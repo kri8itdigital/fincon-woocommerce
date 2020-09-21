@@ -275,7 +275,7 @@ class WC_Fincon{
 	/*
 	HELPER - GET ACCOUNT
 	 */
-	public function GetDebAccount($_DACC = null){
+	public function GetDebAccount($_DACC = null, $FULL = false){
 
 		$_F = false;
 
@@ -292,7 +292,11 @@ class WC_Fincon{
 		$_FOUND = $_RETURN['Found'];
 
 		if($_FOUND):
-			return $_RETURN['AccountBuf'];
+			if($FULL):
+				return $_RETURN;
+			else:
+				return $_RETURN['AccountBuf'];
+			endif;
 		else:
 			
 			if($_RETURN['ErrorString'] != ""):

@@ -1399,7 +1399,7 @@ class Fincon_Woocommerce_Admin {
 
 			$_CONTINUE = get_option('fincon_woocommerce_user_sync_eof');
 
-			$_FIRST = $_FINCON->GetDebAccount($_CONTINUE);
+			$_FIRST = $_FINCON->GetDebAccount($_CONTINUE, true);
 			$_EOF = $_FIRST['Eof'];
 
 		else:			
