@@ -59,6 +59,10 @@ class Fincon_Woocommerce_Deactivator {
 
 		/* CRON FOR LOG CLEANING */
 		wp_clear_scheduled_hook('fincon_woocommerce_clean_logs');
+
+		/* BATCH PROCESSING */
+		delete_option('fincon_woocommerce_product_sync_eof');
+		delete_option('fincon_woocommerce_user_sync_eof');
 	
 		
 
