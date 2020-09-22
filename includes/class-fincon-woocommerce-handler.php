@@ -109,6 +109,10 @@ class WC_Fincon{
 			update_option('fincon_woocommerce_active', 'no');
 
 			WC_Fincon_Logger::log('Fincon FATAL Error: '.$e->getMessage());
+
+			WC_Fincon_Logger::log('CHECK -- **Make Sure Your Credentials Are Correct**');
+
+			WC_Fincon_Logger::log('CHECK -- **Make Sure The Port Is Open On Your Server**');
 		}
 
 	}
@@ -165,27 +169,43 @@ class WC_Fincon{
 
 		WC_Fincon_Logger::log('Settings Connection Sync Running');
 
-		$_TEST_SOAP = new SoapClient($URL); 
+		try{
+			$_TEST_SOAP = new SoapClient($URL); 
 
-		$_KILL = $_TEST_SOAP->KillUsers('0.0');
+			$_KILL = $_TEST_SOAP->KillUsers('0.0');
 
-		$_LOGIN = $_TEST_SOAP->LogIn($DATA, $UN, $PW, 0, '', $EXT);
-		
-		$_TEST_SOAP->LogOut($_LOGIN['ConnectID'], '');
+			$_LOGIN = $_TEST_SOAP->LogIn($DATA, $UN, $PW, 0, '', $EXT);
+			
+			$_TEST_SOAP->LogOut($_LOGIN['ConnectID'], '');
 
-		if($_LOGIN['return']):
-			WC_Fincon_Logger::log('Settings Connection Sync Succeeded');
-		else:
-			if(isset($_LOGIN['ErrorString'])):
-				WC_Fincon_Logger::log('Settings Connection Sync Failed: '.$_LOGIN['ErrorString']);
+			if($_LOGIN['return']):
+				WC_Fincon_Logger::log('Settings Connection Sync Succeeded');
 			else:
-				WC_Fincon_Logger::log('Settings Connection Sync Failed: Check Credentials');
+				if(isset($_LOGIN['ErrorString'])):
+					WC_Fincon_Logger::log('Settings Connection Sync Failed: '.$_LOGIN['ErrorString']);
+				else:
+					WC_Fincon_Logger::log('Settings Connection Sync Failed: Check Credentials');
+				endif;
 			endif;
-		endif;
 
-		WC_Fincon_Logger::log('Settings Connection Sync Ended');
+			WC_Fincon_Logger::log('Settings Connection Sync Ended');
 
-		return $_LOGIN;
+			return $_LOGIN;
+		}
+		catch(Exception $e){
+			update_option('fincon_woocommerce_admin_message_text', 'Fincon is <strong><em>not</em></strong> connected: '.$e->getMessage());
+			update_option('fincon_woocommerce_admin_message_type', 'notice-error');
+
+			WC_Fincon_Logger::log('Fincon FATAL Error: '.$e->getMessage());
+
+			WC_Fincon_Logger::log('CHECK -- **Make Sure Your Credentials Are Correct**');
+
+			WC_Fincon_Logger::log('CHECK -- **Make Sure The Port Is Open On Your Server**');
+
+			WC_Fincon_Logger::log('Settings Connection Sync Ended');
+
+			return array('return' => false, 'ErrorString' => $e->getMessage());
+		}
 
 	}
 
