@@ -1,4 +1,4 @@
-= 1.3.0 - September 22, 2020 =
+= 1.3.0 - September 30, 2020 =
 * Feature: Sync Product Images
 * Feature: Batch Processing
 * Feature: Different Stock Location for orders
@@ -7,6 +7,7 @@
 * Update: Error exception handling on connection update
 * Update: Checkout field Address 2 removed
 * Update: Checkout field Address 1 and City limited to 40 characters
+* Update: Woocommerce decimal setting integration
 
 = 1.2.1 - July 2, 2020 =
 * Update: Category mapping system changes

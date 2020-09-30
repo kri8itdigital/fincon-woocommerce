@@ -24,6 +24,7 @@ class WC_Fincon{
 	var $_PRICE = '';
 	var $_CREATE = '';
 	var $_GUEST = '';
+	var $_DECIMAL = 0;
 
 
 
@@ -67,6 +68,7 @@ class WC_Fincon{
 		$this->_COUPON 		= get_option('fincon_woocommerce_coupon');
 		$this->_REP 		= get_option('fincon_woocommerce_sales_rep');
 		$this->_PRICE 		= get_option('fincon_woocommerce_price');
+		$this->_DECIMAL		= wc_get_price_decimals();
 
 		if(get_option('fincon_woocommerce_ext') == 'yes'):
 			$this->_EXT = true;
@@ -785,9 +787,9 @@ class WC_Fincon{
 
 			$_DETAIL->ItemNo 		= $this->_SHIP;
 			$_DETAIL->Quantity 		= 1;
-			$_DETAIL->LineTotalExcl = number_format($_ORDER->get_shipping_total(), 2);
+			$_DETAIL->LineTotalExcl = number_format($_ORDER->get_shipping_total(), $this->_DECIMAL, ".", "");
 			$_DETAIL->TaxCode 		= $_ITEM->TaxCode;
-			$_DETAIL->LineTotalIncl = number_format($_ORDER->get_shipping_total() + $_ORDER->get_shipping_tax(), 2);
+			$_DETAIL->LineTotalIncl = number_format($_ORDER->get_shipping_total() + $_ORDER->get_shipping_tax(), $this->_DECIMAL, ".", "");
 			$_DETAIL->Description 	= $_ITEM->Description.'-'.$_ORDER->get_shipping_method();
 
 			return $_DETAIL;
@@ -841,14 +843,14 @@ class WC_Fincon{
 
 			$_DETAIL = new TSalesOrderDetailRecord();
 
-			$_AMT_E = number_format($_COUPON['discount_amount'], 2, ".", "");
-			$_AMT_I = number_format($_COUPON['discount_amount'] + $_COUPON['discount_tax'], 2, ".", "");
+			$_AMT_E = number_format($_COUPON['discount_amount'], $this->_DECIMAL, ".", "");
+			$_AMT_I = number_format($_COUPON['discount_amount'] + $_COUPON['discount_tax'], $this->_DECIMAL, ".", "");
 
 			$_DETAIL->ItemNo 		= $this->_COUPON;
 			$_DETAIL->Quantity 		= 1;
-			$_DETAIL->LineTotalExcl = number_format($_AMT_E, 2, ".", "")*-1;
+			$_DETAIL->LineTotalExcl = number_format($_AMT_E, $this->_DECIMAL, ".", "")*-1;
 			$_DETAIL->TaxCode 		= $_ITEM->TaxCode;
-			$_DETAIL->LineTotalIncl = number_format($_AMT_I, 2, ".", "")*-1;
+			$_DETAIL->LineTotalIncl = number_format($_AMT_I, $this->_DECIMAL, ".", "")*-1;
 			$_DETAIL->Description 	= $_ITEM->Description.'-'.$_COUPON->get_name();
 
 			return $_DETAIL;
@@ -1018,8 +1020,8 @@ class WC_Fincon{
 
 			$_SO->AccNo 			= $_ACC_TO_USE;
 			$_SO->LocNo 			= $this->_O_LOC;
-			$_SO->TotalExcl			= number_format($_ORDER->get_total() - $_ORDER->get_total_tax(), 2, ".", "");
-			$_SO->TotalIncl			= number_format($_ORDER->get_total(), 2, ".", "");
+			$_SO->TotalExcl			= number_format($_ORDER->get_total() - $_ORDER->get_total_tax(), $this->_DECIMAL, ".", "");
+			$_SO->TotalIncl			= number_format($_ORDER->get_total(), $this->_DECIMAL, ".", "");
 			$_SO->CustomerRef 		= $_ORDER_ID;
 
 
@@ -1082,9 +1084,9 @@ class WC_Fincon{
 
 				$_DETAIL->ItemNo = $_STOCKITEM->ItemNo;
 				$_DETAIL->Quantity = $_ITEM->get_quantity();
-				$_DETAIL->LineTotalExcl = number_format($_ITEM->get_subtotal(), 2, ".", "");
+				$_DETAIL->LineTotalExcl = number_format($_ITEM->get_subtotal(), $this->_DECIMAL, ".", "");
 				$_DETAIL->TaxCode = $_STOCKITEM->TaxCode;
-				$_DETAIL->LineTotalIncl = number_format($_ITEM->get_subtotal() + $_ITEM->get_subtotal_tax(), 2, ".", "");
+				$_DETAIL->LineTotalIncl = number_format($_ITEM->get_subtotal() + $_ITEM->get_subtotal_tax(), $this->_DECIMAL, ".", "");
 				$_DETAIL->Description = $_STOCKITEM->Description;
 
 				$_SALES_ORDER_DETAILS[] =  $_DETAIL;	
@@ -1115,6 +1117,7 @@ class WC_Fincon{
 				endif;
 
 			endforeach;
+
 			
 			$_SALES_ORDER_NUMBER = $this->CreateSalesOrder($_SO, $_SALES_ORDER_DETAILS, $_ORDER_ID);
 
@@ -1128,7 +1131,7 @@ class WC_Fincon{
 
 				WC_Fincon_Logger::log('Sales Order Success: Assigned Sales Order '.$_SALES_ORDER_NUMBER.' to Order #'.$_ORDER_ID);
 			endif;
-
+			
 		else:
 
 			WC_Fincon_Logger::log('Sales Order Error: No Products on Order');
