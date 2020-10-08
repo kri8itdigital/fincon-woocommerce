@@ -582,7 +582,8 @@ class Fincon_Woocommerce_Admin {
 			'fincon_woocommerce_product_sync_running' => get_option('fincon_woocommerce_product_sync_running'),
 			'fincon_woocommerce_last_product_update' => get_option('fincon_woocommerce_last_product_update'),
 			'fincon_woocommerce_user_sync_running' => get_option('fincon_woocommerce_user_sync_running'),
-			'fincon_woocommerce_last_user_update' => get_option('fincon_woocommerce_last_user_update')
+			'fincon_woocommerce_last_user_update' => get_option('fincon_woocommerce_last_user_update'),
+			'fincon_woocommerce_logged_in_session' => get_option('fincon_woocommerce_logged_in_session')
 		);
 		extract($_ARRAY_OF_FINCON_VARIABLES);
 
@@ -612,6 +613,13 @@ class Fincon_Woocommerce_Admin {
 					<strong class="fincon-admin-failure">No</strong>
 				<?php endif; ?>
     		</div>
+
+    		<?php if($fincon_woocommerce_logged_in_session != ''): ?>
+    			<div class="fincon-admin-status-item">
+	    			<span>Current Logged In Session:</span> 
+	    			<strong><?php echo $fincon_woocommerce_logged_in_session; ?></strong>
+	    		</div>
+    		<?php endif; ?>
 			
 			<?php if($fincon_woocommerce_admin_message_text != ''): ?>
 	    		<div class="fincon-admin-status-item">

@@ -25,6 +25,7 @@ class WC_Fincon{
 	var $_CREATE = '';
 	var $_GUEST = '';
 	var $_DECIMAL = 0;
+	var $_RETRY = 1;
 
 
 
@@ -174,7 +175,7 @@ class WC_Fincon{
 		try{
 			$_TEST_SOAP = new SoapClient($URL); 
 
-			$_KILL = $_TEST_SOAP->KillUsers('0.0');
+			$_KILL = $_TEST_SOAP->KillUsers();
 
 			$_LOGIN = $_TEST_SOAP->LogIn($DATA, $UN, $PW, 0, '', $EXT);
 			
@@ -185,6 +186,7 @@ class WC_Fincon{
 			else:
 				if(isset($_LOGIN['ErrorString'])):
 					WC_Fincon_Logger::log('Settings Connection Sync Failed: '.$_LOGIN['ErrorString']);
+					update_option('fincon_woocommerce_admin_message_error', $_LOGIN['ErrorString']);
 				else:
 					WC_Fincon_Logger::log('Settings Connection Sync Failed: Check Credentials');
 				endif;
@@ -197,6 +199,7 @@ class WC_Fincon{
 		catch(Exception $e){
 			update_option('fincon_woocommerce_admin_message_text', 'Fincon is <strong><em>not</em></strong> connected: '.$e->getMessage());
 			update_option('fincon_woocommerce_admin_message_type', 'notice-error');
+			update_option('fincon_woocommerce_admin_message_error', $e->getMessage());
 
 			WC_Fincon_Logger::log('Fincon FATAL Error: '.$e->getMessage());
 
@@ -225,22 +228,48 @@ class WC_Fincon{
 	 */
 	public function LogIn(){
 		
+		$_HAS_A_LOGIN = get_option('fincon_woocommerce_logged_in_session');
 
-		$_LOGIN = $this->_SOAP->LogIn($this->_D, $this->_UN, $this->_PW, $this->_ID, $this->_ERR, $this->_EXT);
+		if($_HAS_A_LOGIN):
 
-		if($_LOGIN['return']):
-			$this->_ID = $_LOGIN['ConnectID'];		
+			$this->_ID = $_HAS_A_LOGIN;
+
 		else:
 
-			if($_LOGIN['ErrorString'] != ""):
-				$this->_ERRORS[] = 'Could not login: '.$_LOGIN['ErrorString'];
-				WC_Fincon_Logger::log('Connection Login Failed: '.$_LOGIN['ErrorString']);
+			$_LOGIN = $this->_SOAP->LogIn($this->_D, $this->_UN, $this->_PW, $this->_ID, $this->_ERR, $this->_EXT);
+
+			if($_LOGIN['return']):
+				$this->_ID = $_LOGIN['ConnectID'];	
+				update_option('fincon_woocommerce_logged_in_session', $_LOGIN['ConnectID']);
 			else:
-				$this->_ERRORS[] = 'Could not login. Check Credentials.';
-				WC_Fincon_Logger::log('Connection Login Failed: Check Credentials.');
+
+				if($_LOGIN['ErrorString'] != ""):
+					$this->_ERRORS[] = 'Could not login: '.$_LOGIN['ErrorString'];
+					WC_Fincon_Logger::log('Connection Login Failed: '.$_LOGIN['ErrorString']);
+
+					update_option('fincon_woocommerce_admin_message_error', $_LOGIN['ErrorString']);
+
+					/* 1.3.0: Login Retry */
+					if($_LOGIN['ErrorString'] == 'Maximum number of sessions exceeded.' && $this->_RETRY <= 5):
+
+						$this->KillUsers();
+
+						WC_Fincon_Logger::log('Connection Login Retry Attempt:'.$this->_RETRY);
+
+						$this->_RETRY++;
+
+						$this->LogIn();
+
+					endif;
+
+				else:
+					$this->_ERRORS[] = 'Could not login. Check Credentials.';
+					WC_Fincon_Logger::log('Connection Login Failed: Check Credentials.');
+				endif;
+
+				
 			endif;
 
-			
 		endif;
 
 	}
@@ -260,6 +289,8 @@ class WC_Fincon{
 	public function LogOut(){
 
 		$_LOGOUT = $this->_SOAP->LogOut($this->_ID, $this->_ERR);
+
+		delete_option('fincon_woocommerce_logged_in_session');
 		
 	}
 

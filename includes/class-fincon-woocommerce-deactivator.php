@@ -63,6 +63,15 @@ class Fincon_Woocommerce_Deactivator {
 		/* BATCH PROCESSING */
 		delete_option('fincon_woocommerce_product_sync_eof');
 		delete_option('fincon_woocommerce_user_sync_eof');
+		
+
+		/* ACTIVE SESSIONS */
+		if(get_option('fincon_woocommerce_logged_in_session')):
+			$_FINCON = new WC_Fincon();
+			$_FINCON->LogOut();
+
+			delete_option('fincon_woocommerce_logged_in_session');
+		endif;
 	
 		
 
