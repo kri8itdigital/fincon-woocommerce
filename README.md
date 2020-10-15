@@ -4,7 +4,7 @@ Connects your [Fincon](https://fincon.co.za/) accounting system WebAPI to Woocom
 
 ### Requirements
 - Wordpress [tested up to **5.5.1**]
-- Woocommerce [tested up to **4.5.2**]
+- Woocommerce [tested up to **4.6.0**]
 - Fincon Accounting [tested up to **5.251.007**]
 - Fincon Accounting WebAPI [tested up to **5.251.2.0**]
 
