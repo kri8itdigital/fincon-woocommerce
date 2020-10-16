@@ -1073,13 +1073,13 @@ class Fincon_Woocommerce_Admin {
 
 		$_COUNT = 0;
 
-		$_COUNTER = 0; $_BATCH = 500;
+		$_COUNTER = 0; $_BATCH = (int)get_option('fincon_woocommerce_product_batch');
 
 		$RESUME = false;
 
 		$_EOF = false;
 
-		//WC_Fincon_Logger::log('Product Sync Batch Start');
+		WC_Fincon_Logger::log('--Product Full Sync Batch Start--');
 
 		if(get_option('fincon_woocommerce_product_sync_eof')):
 			$RESUME = true;
@@ -1118,7 +1118,7 @@ class Fincon_Woocommerce_Admin {
 
 		if(!$_EOF && $_COUNTER == $_BATCH):
 			update_option('fincon_woocommerce_product_sync_eof', $_STOCK['StockBuf']->ItemNo);
-			//WC_Fincon_Logger::log('Product Sync Batch End');
+			WC_Fincon_Logger::log('--Product Full Sync Batch End--');
 		endif;
 
 		if($_EOF):
@@ -1146,6 +1146,8 @@ class Fincon_Woocommerce_Admin {
 
 		if(is_array($_LIST) && count($_LIST) > 0):
 
+			WC_Fincon_Logger::log('--Product Partial Sync Start--');
+
 			foreach($_LIST as $_ITEM):
 
 				$_SKU = $_ITEM->ItemNo;
@@ -1155,6 +1157,8 @@ class Fincon_Woocommerce_Admin {
 				$_COUNT += self::insert_update_product($_FDATA, $_FINCON,$_DO_IMAGES);
 
 			endforeach;
+
+			WC_Fincon_Logger::log('--Product Partial Sync End--');
 
 		else:
 
@@ -1394,13 +1398,13 @@ class Fincon_Woocommerce_Admin {
 
 		$_COUNT = 0;
 
-		$_COUNTER = 0; $_BATCH = 500;
+		$_COUNTER = 0; $_BATCH = (int)get_option('fincon_woocommerce_user_batch');
 
 		$RESUME = false;
 
 		$_EOF = false;
 
-		//WC_Fincon_Logger::log('User Sync Batch Start');
+		WC_Fincon_Logger::log('--User Full Sync Batch Start--');
 
 		if(get_option('fincon_woocommerce_user_sync_eof')):
 			$RESUME = true;
@@ -1439,7 +1443,7 @@ class Fincon_Woocommerce_Admin {
 
 		if(!$_EOF && $_COUNTER == $_BATCH):
 			update_option('fincon_woocommerce_user_sync_eof', $_USER['AccountBuf']->AccNo);
-			//WC_Fincon_Logger::log('User Sync Batch End');
+			WC_Fincon_Logger::log('--User Full Sync Batch End--');
 		endif;
 
 		if($_EOF):
@@ -1466,6 +1470,8 @@ class Fincon_Woocommerce_Admin {
 
 		if(is_array($_LIST) && count($_LIST) > 0):
 
+			WC_Fincon_Logger::log('--User Partial Sync Start--');
+
 			foreach($_LIST as $_ITEM):
 
 				$_ACC_NO = $_ITEM->AccNo;
@@ -1475,6 +1481,8 @@ class Fincon_Woocommerce_Admin {
 				$_COUNT += self::insert_update_user($_FDATA, $_FINCON, false);
 
 			endforeach;
+
+			WC_Fincon_Logger::log('--User Partial Sync End--');
 
 		else:
 

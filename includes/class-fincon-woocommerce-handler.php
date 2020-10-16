@@ -310,6 +310,7 @@ class WC_Fincon{
 				$this->_ID = $_LOGIN['ConnectID'];	
 				$this->_LOGGED_IN = true;
 				update_option('fincon_woocommerce_logged_in_session', $_LOGIN['ConnectID']);
+				WC_Fincon_Logger::log('**LOGGED IN**');
 			else:
 
 				if($_LOGIN['ErrorString'] != ""):
@@ -364,9 +365,21 @@ class WC_Fincon{
 
 		$_LOGOUT = $this->_SOAP->LogOut($this->_ID, $this->_ERR);
 
-		delete_option('fincon_woocommerce_logged_in_session');
+		if($_LOGOUT['ErrorString'] != ''):
+
+			WC_Fincon_Logger::log('Could not log out: '.$_LOGOUT['ErrorString']);
+
+		else:
+
+			delete_option('fincon_woocommerce_logged_in_session');
 		
-		$this->_LOGGED_IN = false;
+			$this->_LOGGED_IN = false;
+
+			WC_Fincon_Logger::log('**LOGGED OUT**');
+
+		endif;
+
+
 		
 	}
 

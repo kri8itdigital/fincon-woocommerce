@@ -47,6 +47,15 @@ class Fincon_Woocommerce_Activator {
 
 				endif;
 
+
+				if(!get_option('fincon_woocommerce_product_batch')):
+					update_option('fincon_woocommerce_product_batch', 500);
+				endif;
+
+				if(!get_option('fincon_woocommerce_user_batch')):
+					update_option('fincon_woocommerce_user_batch', 500);
+				endif;
+
 			endif;
 
 	    endif;

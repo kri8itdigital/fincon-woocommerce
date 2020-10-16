@@ -225,6 +225,18 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 						'type'          => 'text'
 					),
 					array (
+						'title' 		=> __('Initial Product Import Batch Size', 'fincon-woocommerce'),
+						'desc' 			=> __('The batch size for importing the first time.', 'fincon-woocommerce' ),
+						'type' 			=> 'number',
+						'default' 		=> 500,
+						'custom_attributes' => array(
+								'min' 	=> 1,
+								'max' 	=> 500,
+								'step' 	=> 1,
+						),
+						'id' 			=> 'fincon_woocommerce_product_batch',
+					),
+					array (
 						'title' 		=> __('Price structure', 'fincon-woocommerce'),
 						'desc' 			=> __('The stock item price type (1 – 6) to be used for selling prices.', 'fincon-woocommerce' ),
 						'type' 			=> 'number',
@@ -302,6 +314,18 @@ class fincon_woocommerce_settings extends WC_Settings_Page {
 						'type'          => 'text'
 					),
 					*/
+					array (
+						'title' 		=> __('Initial User Import Batch Size', 'fincon-woocommerce'),
+						'desc' 			=> __('The batch size for importing the first time.', 'fincon-woocommerce' ),
+						'type' 			=> 'number',
+						'default' 		=> 500,
+						'custom_attributes' => array(
+								'min' 	=> 1,
+								'max' 	=> 500,
+								'step' 	=> 1,
+						),
+						'id' 			=> 'fincon_woocommerce_user_batch',
+					),
 					array(
 						'type' => 'sectionend',
 						'id'   => 'fincon_woocommerce_settings',
