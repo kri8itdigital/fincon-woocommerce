@@ -1087,7 +1087,9 @@ class Fincon_Woocommerce_Admin {
 			$_CONTINUE = get_option('fincon_woocommerce_product_sync_eof');
 
 			$_FIRST = $_FINCON->GetStockItem($_CONTINUE, true);
-			$_EOF = $_FIRST['Eof'];
+			if($_FIRST['Eof']):
+				$_EOF = $_FIRST['Eof'];
+			endif;
 
 		else:			
 

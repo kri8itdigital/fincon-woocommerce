@@ -8,7 +8,7 @@ class WC_Fincon{
 	var $_SESSION_ERROR = 'Maximum number of sessions exceeded.';
 	var $_RELOG_ERROR = 'Invalid ConnectID.';
 
-	var $_ID = 0;
+	var $_ID = false;
 	var $_URL = '';
 	var $_UN  = '';
 	var $_PW = '';
@@ -143,11 +143,13 @@ class WC_Fincon{
 		WC_Fincon_Logger::log('Connection Sync Running');
 
 		$_LOGIN = $this->_SOAP->LogIn($this->_D, $this->_UN, $this->_PW, $this->_ID, $this->_ERR, $this->_EXT);
-		
-		$this->LogOut();
 
 		if($_LOGIN['return']):
+			$this->_ID = $_LOGIN['ConnectID'];	
+			WC_Fincon_Logger::log('**LOGGED IN ** ['.$_LOGIN['ConnectID'].']');
 			WC_Fincon_Logger::log('Connection Sync Succeeded');
+			$this->KillUsers();
+			$this->LogOut();
 		else:
 			if(isset($_LOGIN['ErrorString'])):
 				WC_Fincon_Logger::log('Connection Sync Failed: '.$_LOGIN['ErrorString']);
@@ -184,11 +186,10 @@ class WC_Fincon{
 			$_KILL = $_TEST_SOAP->KillUsers();
 
 			$_LOGIN = $_TEST_SOAP->LogIn($DATA, $UN, $PW, 0, '', $EXT);
-			
-			$_TEST_SOAP->LogOut($_LOGIN['ConnectID'], '');
 
 			if($_LOGIN['return']):
 				WC_Fincon_Logger::log('Settings Connection Sync Succeeded');
+				$_TEST_SOAP->LogOut($_LOGIN['ConnectID'], '');
 			else:
 				if(isset($_LOGIN['ErrorString'])):
 					WC_Fincon_Logger::log('Settings Connection Sync Failed: '.$_LOGIN['ErrorString']);
@@ -236,13 +237,13 @@ class WC_Fincon{
 
 		if($this->_RELOG <= 5):
 
+			$this->_RELOG++;
+
 			WC_Fincon_Logger::log('RELOGIN -- **ATTEMPTING RELOGIN** -- '.$this->_RELOG);
 
-			$this->KillUsers();
 			$this->LogOut();
+			$this->KillUsers();
 			$this->Login();
-
-			$this->_RELOG++;
 
 		else:
 
@@ -310,7 +311,7 @@ class WC_Fincon{
 				$this->_ID = $_LOGIN['ConnectID'];	
 				$this->_LOGGED_IN = true;
 				update_option('fincon_woocommerce_logged_in_session', $_LOGIN['ConnectID']);
-				WC_Fincon_Logger::log('**LOGGED IN**');
+				WC_Fincon_Logger::log('**LOGGED IN** ['.$_LOGIN['ConnectID'].']');
 			else:
 
 				if($_LOGIN['ErrorString'] != ""):
@@ -322,11 +323,11 @@ class WC_Fincon{
 					/* 1.3.0: Login Retry */
 					if($_LOGIN['ErrorString'] == $this->_SESSION_ERROR && $this->_RETRY <= 5):
 
+						$this->_RETRY++;
+
 						$this->KillUsers();
 
 						WC_Fincon_Logger::log('Connection Login Retry Attempt:'.$this->_RETRY);
-
-						$this->_RETRY++;
 
 						$this->LogIn();
 
@@ -362,20 +363,33 @@ class WC_Fincon{
 	HELPER - LOGOUT
 	 */
 	public function LogOut(){
+		if($this->_ID):
 
-		$_LOGOUT = $this->_SOAP->LogOut($this->_ID, $this->_ERR);
+			$_LOGOUT = $this->_SOAP->LogOut($this->_ID,  $this->_ERR);
 
-		if($_LOGOUT['ErrorString'] != ''):
+			if($_LOGOUT['ErrorString'] != ''):
 
-			WC_Fincon_Logger::log('Could not log out: '.$_LOGOUT['ErrorString']);
+				WC_Fincon_Logger::log('Could not log out: '.$_LOGOUT['ErrorString']);
+
+			else:				
+			
+				$this->_LOGGED_IN = false;
+
+				WC_Fincon_Logger::log('**LOGGED OUT** ['.$this->_ID.']');
+
+				$this->_ID = false; 
+
+			endif;
+
+			delete_option('fincon_woocommerce_logged_in_session');
 
 		else:
 
 			delete_option('fincon_woocommerce_logged_in_session');
-		
+			
 			$this->_LOGGED_IN = false;
 
-			WC_Fincon_Logger::log('**LOGGED OUT**');
+			WC_Fincon_Logger::log('**NO CONNECT ID TO LOG OUT WITH**');
 
 		endif;
 
@@ -397,11 +411,19 @@ class WC_Fincon{
 	 */
 	public function KillUsers(){
 
+		$_ALL = false;
+
 		if(!$this->_ID):
 			$this->_ID = '0.0';
 		endif;
 
-		$_KILL = $this->_SOAP->KillUsers($this->_ID);
+		$_KILL = $this->_SOAP->KillUsers($this->_ID, $_ALL, $this->_ERR);
+
+		if($_KILL['return']):
+			WC_Fincon_Logger::log('**KILLING NON ACTIVE SESSIONS**');
+		elseif($_KILL['ErrorString'] != ''):
+			WC_Fincon_Logger::log('Could Not Kill Sessions: '.$_KILL['ErrorString']);
+		endif;
 
 		delete_option('fincon_woocommerce_logged_in_session');
 
@@ -418,7 +440,7 @@ class WC_Fincon{
 
 
 	
-	/*
+	/*gen
 	HELPER - GET ACCOUNT
 	 */
 	public function GetDebAccount($_DACC = null, $FULL = false){
