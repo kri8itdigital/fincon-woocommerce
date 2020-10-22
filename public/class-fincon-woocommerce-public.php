@@ -150,6 +150,7 @@ class Fincon_Woocommerce_Public {
 			foreach(WC()->cart->get_cart() as $_ID => $_ITEM):
 
 				$_SKU = $_ITEM['data']->get_sku();
+				$_NAME = $_ITEM['data']->get_name();
 				$_QTY = $_ITEM['quantity'];
 
 				$_STOCKQTY = $_FINCON->GetStockItemQTY($_SKU);
