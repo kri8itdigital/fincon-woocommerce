@@ -32,6 +32,8 @@ class WC_Fincon{
 	var $_RETRY = 1;
 	var $_RELOG = 1;
 
+	var $_IS_ACTIVE = false;
+
 
 
 
@@ -108,6 +110,10 @@ class WC_Fincon{
 		endif;
 
 
+		if(get_option('fincon_woocommerce_user_sync_running') == 'yes' || get_option('fincon_woocommerce_product_sync_running') == 'yes'):
+			$this->_IS_ACTIVE = true;
+		endif;
+
 		try{
 			$this->_SOAP = new SoapClient($this->_URL);
 		}
@@ -139,23 +145,37 @@ class WC_Fincon{
 	HELPER - VALIDATE
 	 */
 	public function Validate(){
+		
+		$_HAS_A_LOGIN = get_option('fincon_woocommerce_logged_in_session');
 
 		WC_Fincon_Logger::log('Connection Sync Running');
 
-		$_LOGIN = $this->_SOAP->LogIn($this->_D, $this->_UN, $this->_PW, $this->_ID, $this->_ERR, $this->_EXT);
+		if($_HAS_A_LOGIN):
 
-		if($_LOGIN['return']):
-			$this->_ID = $_LOGIN['ConnectID'];	
-			WC_Fincon_Logger::log('**LOGGED IN ** ['.$_LOGIN['ConnectID'].']');
-			WC_Fincon_Logger::log('Connection Sync Succeeded');
-			$this->KillUsers();
-			$this->LogOut();
+			$this->_ID = $_HAS_A_LOGIN;
+
+			/* TEST LOGIN */
+			$this->TestLogin();
+
 		else:
-			if(isset($_LOGIN['ErrorString'])):
-				WC_Fincon_Logger::log('Connection Sync Failed: '.$_LOGIN['ErrorString']);
+
+			$_LOGIN = $this->_SOAP->LogIn($this->_D, $this->_UN, $this->_PW, $this->_ID, $this->_ERR, $this->_EXT);
+
+
+			if($_LOGIN['return']):
+				$this->_ID = $_LOGIN['ConnectID'];	
+				WC_Fincon_Logger::log('**LOGGED IN ** ['.$_LOGIN['ConnectID'].']');
+				WC_Fincon_Logger::log('Connection Sync Succeeded');
+				$this->KillUsers();
+				$this->LogOut();
 			else:
-				WC_Fincon_Logger::log('Connection Sync Failed: Check Credentials');
+				if(isset($_LOGIN['ErrorString'])):
+					WC_Fincon_Logger::log('Connection Sync Failed: '.$_LOGIN['ErrorString']);
+				else:
+					WC_Fincon_Logger::log('Connection Sync Failed: Check Credentials');
+				endif;
 			endif;
+
 		endif;
 
 		WC_Fincon_Logger::log('Connection Sync Ended');
@@ -237,17 +257,24 @@ class WC_Fincon{
 
 		if($this->_RELOG <= 5):
 
-			$this->_RELOG++;
+			delete_option('fincon_woocommerce_logged_in_session');
 
 			WC_Fincon_Logger::log('RELOGIN -- **ATTEMPTING RELOGIN** -- '.$this->_RELOG);
 
+			$this->_RELOG++;
+
 			$this->LogOut();
+			$this->LogIn();
 			$this->KillUsers();
-			$this->Login();
 
 		else:
 
 			WC_Fincon_Logger::log('RELOGIN -- **ATTEMPT LIMIT REACHED** -- SHUTTING DOWN');
+
+			delete_option('fincon_woocommerce_product_sync_running');
+			delete_option('fincon_woocommerce_user_sync_running');
+			delete_option('fincon_woocommerce_logged_in_session');
+
 			exit();
 
 		endif;
@@ -293,57 +320,61 @@ class WC_Fincon{
 	HELPER - LOGIN
 	 */
 	public function LogIn(){
+
+		if(!$this->_IS_ACTIVE):
 		
-		$_HAS_A_LOGIN = get_option('fincon_woocommerce_logged_in_session');
+			$_HAS_A_LOGIN = get_option('fincon_woocommerce_logged_in_session');
 
-		if($_HAS_A_LOGIN):
+			if($_HAS_A_LOGIN):
 
-			$this->_ID = $_HAS_A_LOGIN;
+				$this->_ID = $_HAS_A_LOGIN;
 
-			/* TEST LOGIN */
-			$this->TestLogin();
+				/* TEST LOGIN */
+				$this->TestLogin();
 
-		else:
-
-			$_LOGIN = $this->_SOAP->LogIn($this->_D, $this->_UN, $this->_PW, $this->_ID, $this->_ERR, $this->_EXT);
-
-			if($_LOGIN['return']):
-				$this->_ID = $_LOGIN['ConnectID'];	
-				$this->_LOGGED_IN = true;
-				update_option('fincon_woocommerce_logged_in_session', $_LOGIN['ConnectID']);
-				WC_Fincon_Logger::log('**LOGGED IN** ['.$_LOGIN['ConnectID'].']');
 			else:
 
-				if($_LOGIN['ErrorString'] != ""):
-					$this->_ERRORS[] = 'Could not login: '.$_LOGIN['ErrorString'];
-					WC_Fincon_Logger::log('Connection Login Failed: '.$_LOGIN['ErrorString']);
+				$_LOGIN = $this->_SOAP->LogIn($this->_D, $this->_UN, $this->_PW, $this->_ID, $this->_ERR, $this->_EXT);
 
-					update_option('fincon_woocommerce_admin_message_error', $_LOGIN['ErrorString']);
+				if($_LOGIN['return']):
+					$this->_ID = $_LOGIN['ConnectID'];	
+					$this->_LOGGED_IN = true;
+					update_option('fincon_woocommerce_logged_in_session', $_LOGIN['ConnectID']);
+					WC_Fincon_Logger::log('**LOGGED IN** ['.$_LOGIN['ConnectID'].']');
+				else:
 
-					/* 1.3.0: Login Retry */
-					if($_LOGIN['ErrorString'] == $this->_SESSION_ERROR && $this->_RETRY <= 5):
+					if($_LOGIN['ErrorString'] != ""):
+						$this->_ERRORS[] = 'Could not login: '.$_LOGIN['ErrorString'];
+						WC_Fincon_Logger::log('Connection Login Failed: '.$_LOGIN['ErrorString']);
 
-						$this->_RETRY++;
+						update_option('fincon_woocommerce_admin_message_error', $_LOGIN['ErrorString']);
 
-						$this->KillUsers();
+						/* 1.3.0: Login Retry */
+						if($_LOGIN['ErrorString'] == $this->_SESSION_ERROR && $this->_RETRY <= 5):
 
-						WC_Fincon_Logger::log('Connection Login Retry Attempt:'.$this->_RETRY);
+							$this->_RETRY++;
 
-						$this->LogIn();
+							$this->KillUsers();
 
-					elseif($this->_RETRY > 5 ):
+							WC_Fincon_Logger::log('Connection Login Retry Attempt:'.$this->_RETRY);
 
-						WC_Fincon_Logger::log('Connection Login Retry -- **ATTEMPT LIMIT REACHED** -- SHUTTING DOWN');
-						exit();
+							$this->LogIn();
 
+						elseif($this->_RETRY > 5 ):
+
+							WC_Fincon_Logger::log('Connection Login Retry -- **ATTEMPT LIMIT REACHED** -- SHUTTING DOWN');
+							exit();
+
+						endif;
+
+					else:
+						$this->_ERRORS[] = 'Could not login. Check Credentials.';
+						WC_Fincon_Logger::log('Connection Login Failed: Check Credentials.');
 					endif;
 
-				else:
-					$this->_ERRORS[] = 'Could not login. Check Credentials.';
-					WC_Fincon_Logger::log('Connection Login Failed: Check Credentials.');
+					
 				endif;
 
-				
 			endif;
 
 		endif;
@@ -365,23 +396,27 @@ class WC_Fincon{
 	public function LogOut(){
 		if($this->_ID):
 
-			$_LOGOUT = $this->_SOAP->LogOut($this->_ID,  $this->_ERR);
+			if(!$this->_IS_ACTIVE):
 
-			if($_LOGOUT['ErrorString'] != ''):
+				$_LOGOUT = $this->_SOAP->LogOut($this->_ID,  $this->_ERR);
 
-				WC_Fincon_Logger::log('Could not log out: '.$_LOGOUT['ErrorString']);
+				if($_LOGOUT['ErrorString'] != ''):
 
-			else:				
-			
-				$this->_LOGGED_IN = false;
+					WC_Fincon_Logger::log('Could not log out: '.$_LOGOUT['ErrorString']);
 
-				WC_Fincon_Logger::log('**LOGGED OUT** ['.$this->_ID.']');
+				else:				
+				
+					$this->_LOGGED_IN = false;
 
-				$this->_ID = false; 
+					WC_Fincon_Logger::log('**LOGGED OUT** ['.$this->_ID.']');
+
+					$this->_ID = false; 
+
+				endif;
+
+				delete_option('fincon_woocommerce_logged_in_session');
 
 			endif;
-
-			delete_option('fincon_woocommerce_logged_in_session');
 
 		else:
 

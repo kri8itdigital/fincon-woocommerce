@@ -913,8 +913,6 @@ class Fincon_Woocommerce_Admin {
 			set_time_limit(0);
 			@ini_set('max_execution_time',0);
 
-			update_option('fincon_woocommerce_product_sync_running', 'yes');
-
 			$_LAST_UPDATE = get_option('fincon_woocommerce_last_product_update');
 
 			/* 1.3.0 - add images flag */
@@ -933,6 +931,8 @@ class Fincon_Woocommerce_Admin {
 			$_FINCON = new WC_Fincon();
 
 			$_FINCON->LogIn();
+
+			update_option('fincon_woocommerce_product_sync_running', 'yes');
 
 			$_COUNT = 0;
 
@@ -953,10 +953,9 @@ class Fincon_Woocommerce_Admin {
 
 			endif;
 
+			update_option('fincon_woocommerce_product_sync_running', 'no');
 
 			$_FINCON->LogOut();
-
-			update_option('fincon_woocommerce_product_sync_running', 'no');
 
 			if(!get_option('fincon_woocommerce_product_sync_eof')):
 			
@@ -969,6 +968,8 @@ class Fincon_Woocommerce_Admin {
 				endif;
 
 			else:
+
+				WC_Fincon_Logger::log('**QUEING NEXT PRODUCT SYNC**');
 
 				if($ISCRON):
 					self::sync_stock_items($ISCRON);
@@ -1003,8 +1004,6 @@ class Fincon_Woocommerce_Admin {
 			set_time_limit(0);
 			@ini_set('max_execution_time',0);
 
-			update_option('fincon_woocommerce_user_sync_running', 'yes');
-
 			$_LAST_UPDATE = get_option('fincon_woocommerce_last_user_update');
 
 			if(!get_option('fincon_woocommerce_user_sync_eof')):
@@ -1014,6 +1013,8 @@ class Fincon_Woocommerce_Admin {
 			$_FINCON = new WC_Fincon();
 
 			$_FINCON->LogIn();
+
+			update_option('fincon_woocommerce_user_sync_running', 'yes');
 
 			$_COUNT = 0;
 
@@ -1034,9 +1035,9 @@ class Fincon_Woocommerce_Admin {
 
 			endif;
 
-			$_FINCON->LogOut();
-
 			update_option('fincon_woocommerce_user_sync_running', 'no');
+
+			$_FINCON->LogOut();
 
 			if(!get_option('fincon_woocommerce_user_sync_eof')):
 			
@@ -1049,6 +1050,8 @@ class Fincon_Woocommerce_Admin {
 				endif;
 
 			else:
+
+				WC_Fincon_Logger::log('**QUEING NEXT USER SYNC**');
 
 				if($ISCRON):
 					self::sync_user_items($ISCRON);
@@ -1086,6 +1089,8 @@ class Fincon_Woocommerce_Admin {
 
 			$_CONTINUE = get_option('fincon_woocommerce_product_sync_eof');
 
+			WC_Fincon_Logger::log('RESUMING FROM '. $_CONTINUE);
+
 			$_FIRST = $_FINCON->GetStockItem($_CONTINUE, true);
 			if($_FIRST['Eof']):
 				$_EOF = $_FIRST['Eof'];
@@ -1119,7 +1124,9 @@ class Fincon_Woocommerce_Admin {
 		endwhile;
 
 		if(!$_EOF && $_COUNTER == $_BATCH):
-			update_option('fincon_woocommerce_product_sync_eof', $_STOCK['StockBuf']->ItemNo);
+			update_option('fincon_woocommerce_product_sync_eof', $_STOCK['StockBuf']->ItemNo);						
+
+			WC_Fincon_Logger::log('Product Sync: '.$_COUNT.' products synced');
 			WC_Fincon_Logger::log('--Product Full Sync Batch End--');
 		endif;
 
@@ -1141,14 +1148,14 @@ class Fincon_Woocommerce_Admin {
 	public static function fincon_product_sync_partial(&$_FINCON, $_DATE_TO_WORK_WITH,$_DO_IMAGES){
 
 		$_COUNT = 0;
+
+		WC_Fincon_Logger::log('--Product Partial Sync Start--');
 		
 		$_DATA = $_FINCON->GetStockChanged($_DATE_TO_WORK_WITH);
 
 		$_LIST = $_DATA['StockList'];
 
 		if(is_array($_LIST) && count($_LIST) > 0):
-
-			WC_Fincon_Logger::log('--Product Partial Sync Start--');
 
 			foreach($_LIST as $_ITEM):
 
@@ -1158,15 +1165,17 @@ class Fincon_Woocommerce_Admin {
 
 				$_COUNT += self::insert_update_product($_FDATA, $_FINCON,$_DO_IMAGES);
 
-			endforeach;
+			endforeach;			
 
-			WC_Fincon_Logger::log('--Product Partial Sync End--');
+			WC_Fincon_Logger::log('Product Sync: '.$_COUNT.' products synced');
 
 		else:
 
 			WC_Fincon_Logger::log('Product Sync: no products changes to sync ('.$_DATE_TO_WORK_WITH.')');
 
 		endif;
+
+		WC_Fincon_Logger::log('--Product Partial Sync End--');
 
 		return $_COUNT;
 
@@ -1374,6 +1383,9 @@ class Fincon_Woocommerce_Admin {
                 endif;
 
 			else:
+
+
+                	WC_Fincon_Logger::log('Product ('.$_SKU.'): Ignored');
 
 				return 0;
 
