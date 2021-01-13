@@ -91,9 +91,12 @@ class Fincon_Woocommerce_Public {
 		$_SKU 		= $_PROD->get_sku();
 
 		$_FINCON = new WC_Fincon();
+		WC_Fincon_Logger::log('--Start Cart Validation--');
 		$_FINCON->LogIn();
 		$_STOCKQTY = $_FINCON->GetStockItemQTY($_SKU);
+		WC_Fincon_Logger::log('Stock Check ('.$_SKU.'): '.$_STOCKQTY);
 		$_FINCON->LogOut();
+		WC_Fincon_Logger::log('--End Cart Validation--');
 
 		if($_STOCKQTY && $_STOCKQTY > 0):
 
@@ -145,6 +148,8 @@ class Fincon_Woocommerce_Public {
 
 			$_FINCON = new WC_Fincon();
 
+			WC_Fincon_Logger::log('--Start Checking Cart/Checkout Items--');
+
 			$_FINCON->LogIn();
 
 			foreach(WC()->cart->get_cart() as $_ID => $_ITEM):
@@ -155,6 +160,7 @@ class Fincon_Woocommerce_Public {
 
 				$_STOCKQTY = $_FINCON->GetStockItemQTY($_SKU);
 
+				WC_Fincon_Logger::log('Stock Check ('.$_SKU.'): '.$_STOCKQTY);
 
 				if($_STOCKQTY && $_STOCKQTY > 0):
 
@@ -196,6 +202,8 @@ class Fincon_Woocommerce_Public {
 			endforeach;
 
 			$_FINCON->LogOut();
+
+			WC_Fincon_Logger::log('--End Checking Cart/Checkout Items--');
 
 		endif;
 	}

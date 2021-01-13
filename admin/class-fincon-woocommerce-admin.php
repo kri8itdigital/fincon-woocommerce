@@ -1449,14 +1449,16 @@ class Fincon_Woocommerce_Admin {
 
 			$_EOF = $_USER['Eof'];
 
-			update_option('fincon_woocommerce_user_sync_eof', $_USER['AccountBuf']->AccNo);
+			$_ACC = $_USER['AccountBuf'];
+
+			update_option('fincon_woocommerce_user_sync_eof', $_ACC->AccNo);
 
 			$_COUNTER++;
 
 		endwhile;
 
 		if(!$_EOF && $_COUNTER == $_BATCH):
-			update_option('fincon_woocommerce_user_sync_eof', $_USER['AccountBuf']->AccNo);
+			update_option('fincon_woocommerce_user_sync_eof', $_ACC->AccNo);
 			WC_Fincon_Logger::log('--User Full Sync Batch End--');
 		endif;
 

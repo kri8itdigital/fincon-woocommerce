@@ -296,9 +296,7 @@ class WC_Fincon{
 
 		$_F = false;
 
-		$_DEP = new TDebAccountRecord();
-
-		$_RETURN = $this->_SOAP->GetDebAccount($this->_ID, $this->_ACC, $_DEP, $_F, $this->_ERR);
+		$_RETURN = $this->_SOAP->KeepAlive($this->_ID, $this->_ERR);
 
 		if($_RETURN['ErrorString'] == $this->_RELOG_ERROR):		
 			WC_Fincon_Logger::log('**INVALID CONNECT ID**');	
@@ -320,61 +318,57 @@ class WC_Fincon{
 	HELPER - LOGIN
 	 */
 	public function LogIn(){
-
-		if(!$this->_IS_ACTIVE):
 		
-			$_HAS_A_LOGIN = get_option('fincon_woocommerce_logged_in_session');
+		$_HAS_A_LOGIN = get_option('fincon_woocommerce_logged_in_session');
 
-			if($_HAS_A_LOGIN):
+		if($_HAS_A_LOGIN):
 
-				$this->_ID = $_HAS_A_LOGIN;
+			$this->_ID = $_HAS_A_LOGIN;
 
-				/* TEST LOGIN */
-				$this->TestLogin();
+			/* TEST LOGIN */
+			$this->TestLogin();
 
+		elseif(!$this->_IS_ACTIVE):
+
+			$_LOGIN = $this->_SOAP->LogIn($this->_D, $this->_UN, $this->_PW, $this->_ID, $this->_ERR, $this->_EXT);
+
+			if($_LOGIN['return']):
+				$this->_ID = $_LOGIN['ConnectID'];	
+				$this->_LOGGED_IN = true;
+				update_option('fincon_woocommerce_logged_in_session', $_LOGIN['ConnectID']);
+				WC_Fincon_Logger::log('**LOGGED IN** ['.$_LOGIN['ConnectID'].']');
 			else:
 
-				$_LOGIN = $this->_SOAP->LogIn($this->_D, $this->_UN, $this->_PW, $this->_ID, $this->_ERR, $this->_EXT);
+				if($_LOGIN['ErrorString'] != ""):
+					$this->_ERRORS[] = 'Could not login: '.$_LOGIN['ErrorString'];
+					WC_Fincon_Logger::log('Connection Login Failed: '.$_LOGIN['ErrorString']);
 
-				if($_LOGIN['return']):
-					$this->_ID = $_LOGIN['ConnectID'];	
-					$this->_LOGGED_IN = true;
-					update_option('fincon_woocommerce_logged_in_session', $_LOGIN['ConnectID']);
-					WC_Fincon_Logger::log('**LOGGED IN** ['.$_LOGIN['ConnectID'].']');
-				else:
+					update_option('fincon_woocommerce_admin_message_error', $_LOGIN['ErrorString']);
 
-					if($_LOGIN['ErrorString'] != ""):
-						$this->_ERRORS[] = 'Could not login: '.$_LOGIN['ErrorString'];
-						WC_Fincon_Logger::log('Connection Login Failed: '.$_LOGIN['ErrorString']);
+					/* 1.3.0: Login Retry */
+					if($_LOGIN['ErrorString'] == $this->_SESSION_ERROR && $this->_RETRY <= 5):
 
-						update_option('fincon_woocommerce_admin_message_error', $_LOGIN['ErrorString']);
+						$this->_RETRY++;
 
-						/* 1.3.0: Login Retry */
-						if($_LOGIN['ErrorString'] == $this->_SESSION_ERROR && $this->_RETRY <= 5):
+						$this->KillUsers();
 
-							$this->_RETRY++;
+						WC_Fincon_Logger::log('Connection Login Retry Attempt:'.$this->_RETRY);
 
-							$this->KillUsers();
+						$this->LogIn();
 
-							WC_Fincon_Logger::log('Connection Login Retry Attempt:'.$this->_RETRY);
+					elseif($this->_RETRY > 5 ):
 
-							$this->LogIn();
+						WC_Fincon_Logger::log('Connection Login Retry -- **ATTEMPT LIMIT REACHED** -- SHUTTING DOWN');
+						exit();
 
-						elseif($this->_RETRY > 5 ):
-
-							WC_Fincon_Logger::log('Connection Login Retry -- **ATTEMPT LIMIT REACHED** -- SHUTTING DOWN');
-							exit();
-
-						endif;
-
-					else:
-						$this->_ERRORS[] = 'Could not login. Check Credentials.';
-						WC_Fincon_Logger::log('Connection Login Failed: Check Credentials.');
 					endif;
 
-					
+				else:
+					$this->_ERRORS[] = 'Could not login. Check Credentials.';
+					WC_Fincon_Logger::log('Connection Login Failed: Check Credentials.');
 				endif;
 
+				
 			endif;
 
 		endif;
@@ -961,7 +955,7 @@ class WC_Fincon{
 				
 			$this->_ERRORS[] = $_RETURN['ErrorString'];
 
-			WC_Fincon_Logger::log('API GetStockImage Error: '.$_RETURN['ErrorString']);
+			WC_Fincon_Logger::log('API GetStockImage Error ('.$SKU.'): '.$_RETURN['ErrorString']);
 			
 			return false;
 

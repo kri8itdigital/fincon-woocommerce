@@ -1,3 +1,10 @@
+= 1.3.1 - January 13, 2021 =
+* Update: Exception handling on Stock Images
+* Update: Change to User Syncing tracking
+* Update: Change to Connection Keep Alive
+* Fix: User Syncing error based on testing connection is still active
+* Feature: Better logging for checking stock
+
 = 1.3.0 - October 10, 2020 =
 * Feature: Sync Product Images
 * Feature: Batch Processing
